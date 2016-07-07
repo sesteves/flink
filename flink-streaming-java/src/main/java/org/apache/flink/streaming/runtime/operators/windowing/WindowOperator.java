@@ -367,7 +367,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	@SuppressWarnings("unchecked")
 	protected void processTriggerResult(TriggerResult triggerResult, W window) throws Exception {
 		// SROE
-		System.out.println("### ProcessingTriggerResult called!");
+		// System.out.println("### ProcessingTriggerResult called!");
 
 		if (!triggerResult.isFire() && !triggerResult.isPurge()) {
 			// do nothing

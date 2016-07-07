@@ -348,7 +348,7 @@ class StreamExecutionEnvironment(javaEnv: JavaEnv) {
   // --------------------------------------------------------------------------------------------
   /**
    * Sets the time characteristic for all streams create from this environment, e.g., processing
-   * time, event time, or ingestion time.
+   * time, event time, or ingestion timeprint.
    *
    * If you set the characteristic to IngestionTime of EventTime this will set a default
    * watermark update interval of 200 ms. If this is not applicable for your application
