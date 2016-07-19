@@ -38,7 +38,7 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	private String line = null;
 
-	private JSONDeserializer deserializer = new JSONDeserializer();
+	private JSONDeserializer deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory());
 
 	public BucketList() {
 		try {
@@ -59,14 +59,6 @@ public class BucketList<V> implements Iterator, Iterable {
 	public V next() {
 
 		try {
-
-			new JSONDeserializer<V>()
-
-				.use(V, )
-				// .use( DateTime.class, new DateTimeObjectFactory() )
-				.deserialize(line);
-
-
 			V result = (V)deserializer.deserialize(line);
 			line = br.readLine();
 			return result;
