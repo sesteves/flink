@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.state.hybrid;
 
+import flexjson.JSONSerializer;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -103,10 +104,9 @@ public class MemFsListState<K, N, V>
 		}
 		list.add(value);
 
-		writer.println(currentKey + );
-
-
-
+		JSONSerializer serializer = new JSONSerializer();
+		String json = serializer.serialize(value);
+		writer.println(json);
 	}
 
 	@Override
