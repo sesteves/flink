@@ -32,9 +32,7 @@ import org.apache.flink.runtime.state.memory.MemoryStateBackend;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -71,38 +69,41 @@ public class MemFsListState<K, N, V>
 
 	@Override
 	public Iterable<V> get() {
-		if (currentNSState == null) {
-			currentNSState = state.get(currentNamespace);
-		}
-		if (currentNSState != null) {
-			List<V> result = currentNSState.get(currentKey);
-			if (result == null) {
-				return Collections.emptyList();
-			} else {
-				return result;
-			}
-		}
-		return Collections.emptyList();
+//
+//		if (currentNSState == null) {
+//			currentNSState = state.get(currentNamespace);
+//		}
+//		if (currentNSState != null) {
+//			List<V> result = currentNSState.get(currentKey);
+//			if (result == null) {
+//				return Collections.emptyList();
+//			} else {
+//				return result;
+//			}
+//		}
+//		return Collections.emptyList();
+
+		return new BucketList<V>();
 	}
 
 	@Override
 	public void add(V value) {
-		if (currentKey == null) {
-			throw new RuntimeException("No key available.");
-		}
-
-		if (currentNSState == null) {
-			currentNSState = new HashMap<>();
-			state.put(currentNamespace, currentNSState);
-		}
-
-
-		ArrayList<V> list = currentNSState.get(currentKey);
-		if (list == null) {
-			list = new ArrayList<>();
-			currentNSState.put(currentKey, list);
-		}
-		list.add(value);
+//		if (currentKey == null) {
+//			throw new RuntimeException("No key available.");
+//		}
+//
+//		if (currentNSState == null) {
+//			currentNSState = new HashMap<>();
+//			state.put(currentNamespace, currentNSState);
+//		}
+//
+//
+//		BucketList<V> list = currentNSState.get(currentKey);
+//		if (list == null) {
+//			list = new BucketList<>();
+//			currentNSState.put(currentKey, list);
+//		}
+//		list.add(value);
 
 		JSONSerializer serializer = new JSONSerializer();
 		String json = serializer.serialize(value);
