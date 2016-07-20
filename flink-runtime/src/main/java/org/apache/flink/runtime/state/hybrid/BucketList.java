@@ -21,7 +21,6 @@ package org.apache.flink.runtime.state.hybrid;
 import flexjson.JSONDeserializer;
 import scala.Tuple2;
 
-import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Iterator;
@@ -34,7 +33,8 @@ public class BucketList<V> implements Iterator, Iterable {
 //	private List bucket1 = new ArrayList();
 //	private List bucket2 = new ArrayList();
 
-	private BufferedReader br;
+	// private BufferedReader br;
+	private FileReader reader;
 
 	private String line = null;
 
@@ -42,31 +42,42 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	public BucketList() {
 		try {
-			br = new BufferedReader(new FileReader("state.txt"));
-			line = br.readLine();
+			//br = new BufferedReader(new FileReader("state.txt"));
+			// line = br.readLine();
+
+			reader = new FileReader("state.txt");
+			line = readLine();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	private String readLine() {
+		StringBuilder sb = new StringBuilder();
+		try {
+			for (int chr = reader.read(); chr != '\n' && chr != -1; chr = reader.read()) {
+				sb.append((char) chr);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return sb.toString();
 	}
 
 
 	@Override
 	public boolean hasNext() {
-		return line != null;
+		// return line != null;
+		return !"".equals(line);
 	}
 
 	@Override
 	public V next() {
 
-		try {
-			V result = (V)deserializer.deserialize(line);
-			line = br.readLine();
-			return result;
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		V result = (V)deserializer.deserialize(line);
+		line = readLine();
+		return result;
 
-		return null;
 	}
 
 	@Override
