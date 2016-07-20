@@ -83,6 +83,7 @@ public class MemFsListState<K, N, V>
 //		}
 //		return Collections.emptyList();
 
+		writer.flush();
 		return new BucketList<V>();
 	}
 
