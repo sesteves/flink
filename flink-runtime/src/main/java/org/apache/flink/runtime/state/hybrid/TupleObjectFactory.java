@@ -18,11 +18,14 @@
 
 package org.apache.flink.runtime.state.hybrid;
 
+import flexjson.JsonNumber;
 import flexjson.ObjectBinder;
 import flexjson.ObjectFactory;
 import scala.Tuple2;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -31,10 +34,11 @@ public class TupleObjectFactory implements ObjectFactory {
 
 	@Override
 	public Object instantiate(ObjectBinder context, Object value, Type targetType, Class targetClass) {
-
-		System.out.println("### class: " + value.getClass());
-		if(value instanceof Tuple2)
-			return new Tuple2(1,1);
+		if(value instanceof HashMap) {
+			Map bindings = (Map)value;
+			return new Tuple2(bindings.get("_1"), ((JsonNumber)bindings.get("_2")).toInteger());
+		}
+		System.out.println("### RETURNING NULL");
 		return null;
 	}
 }
