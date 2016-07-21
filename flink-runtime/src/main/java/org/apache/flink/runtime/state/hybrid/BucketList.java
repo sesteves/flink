@@ -21,8 +21,8 @@ package org.apache.flink.runtime.state.hybrid;
 import flexjson.JSONDeserializer;
 import scala.Tuple2;
 
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.Iterator;
 
 /**
@@ -34,9 +34,10 @@ public class BucketList<V> implements Iterator, Iterable {
 //	private List bucket2 = new ArrayList();
 
 	// private BufferedReader br;
-	private FileReader reader;
+	// private FileReader reader;
+	private RandomAccessFile raf;
 
-	private String line = null;
+	private String line;
 
 	private JSONDeserializer deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory());
 
@@ -44,47 +45,47 @@ public class BucketList<V> implements Iterator, Iterable {
 		try {
 			//br = new BufferedReader(new FileReader("state.txt"));
 			// line = br.readLine();
-
-			reader = new FileReader("state.txt");
-			line = readLine();
+			// reader = new FileReader("state.txt");
+			raf = new RandomAccessFile("state.txt", "r");
+			line = raf.readLine();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private String readLine() {
-		StringBuilder sb = new StringBuilder();
-		try {
-			for (int chr = reader.read(); chr != '\n' && chr != -1; chr = reader.read()) {
-				sb.append((char) chr);
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return sb.toString();
-	}
+//	private String readLine() {
+//		StringBuilder sb = new StringBuilder();
+//		try {
+//			for (int chr = reader.read(); chr != '\n' && chr != -1; chr = reader.read()) {
+//				sb.append((char) chr);
+//			}
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//		return sb.toString();
+//	}
+
+
 
 
 	@Override
 	public boolean hasNext() {
-		// return line != null;
-		return !"".equals(line);
+		return line != null;
 	}
 
 	@Override
 	public V next() {
-
 		V result = (V)deserializer.deserialize(line);
-		line = readLine();
+		try {
+			line = raf.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		return result;
-
 	}
 
 	@Override
 	public void remove() {
-
-
-
 	}
 
 	@Override
