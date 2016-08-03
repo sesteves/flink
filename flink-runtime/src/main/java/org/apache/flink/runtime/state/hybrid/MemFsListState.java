@@ -49,6 +49,8 @@ public class MemFsListState<K, N, V>
 
 	private PrintWriter writer;
 
+	private BucketList bucketList;
+
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc);
 		try {
@@ -105,6 +107,9 @@ public class MemFsListState<K, N, V>
 //			currentNSState.put(currentKey, list);
 //		}
 //		list.add(value);
+
+
+		bucketList.add(value);
 
 		JSONSerializer serializer = new JSONSerializer();
 		String json = serializer.serialize(value);
