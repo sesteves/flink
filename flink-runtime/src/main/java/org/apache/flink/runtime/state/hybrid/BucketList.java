@@ -19,35 +19,52 @@
 package org.apache.flink.runtime.state.hybrid;
 
 import flexjson.JSONDeserializer;
+import flexjson.JSONSerializer;
 import scala.Tuple2;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  *
  */
 public class BucketList<V> implements Iterator, Iterable {
 
-//	private List bucket1 = new ArrayList();
+	private static final int PRIMARY_BUCKET_SIZE = 100000;
+
+	private List primaryBucket = new ArrayList(PRIMARY_BUCKET_SIZE);
 //	private List bucket2 = new ArrayList();
 
-	// private BufferedReader br;
+	private BufferedReader br;
 	// private FileReader reader;
-	private RandomAccessFile raf;
+	//private RandomAccessFile raf;
 
 	private String line;
+
+	private PrintWriter secondaryBucket;
+
+	JSONSerializer serializer = new JSONSerializer();
 
 	private JSONDeserializer deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory());
 
 	public BucketList() {
 		try {
-			//br = new BufferedReader(new FileReader("state.txt"));
+			secondaryBucket = new PrintWriter("state.txt");
+
+			br = new BufferedReader(new FileReader("state.txt"));
 			// line = br.readLine();
 			// reader = new FileReader("state.txt");
-			raf = new RandomAccessFile("state.txt", "r");
-			line = raf.readLine();
+			// raf = new RandomAccessFile("state.txt", "r");
+			line = br.readLine();
+			if(line == null) {
+
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -75,13 +92,33 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	@Override
 	public V next() {
-		V result = (V)deserializer.deserialize(line);
-		try {
-			line = raf.readLine();
-		} catch (IOException e) {
-			e.printStackTrace();
+		V result = null;
+		if(primaryBucket.size() > 0) {
+			result = primaryBucket.remove(0);
+		} else {
+			result = (V)deserializer.deserialize(line);
+			try {
+				line = br.readLine();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
+
 		return result;
+	}
+
+	// TODO thread to load primaryBucket from secondaryBucket
+
+
+
+
+	public void add(V value) {
+		if(primaryBucket.size() <= PRIMARY_BUCKET_SIZE) {
+			primaryBucket.add(value);
+		} else {
+			String json = serializer.serialize(value);
+			secondaryBucket.println(json);
+		}
 	}
 
 	@Override
