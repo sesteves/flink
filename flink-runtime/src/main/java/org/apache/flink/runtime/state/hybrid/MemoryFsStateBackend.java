@@ -56,23 +56,36 @@ public class MemoryFsStateBackend extends AbstractStateBackend {
 	/** The maximal size that the snapshotted memory state may have */
 	private final int maxStateSize;
 
+	/** */
+	private final int maxTuplesInMemory;
+
 	/**
 	 * Creates a new memory state backend that accepts states whose serialized forms are
 	 * up to the default state size (5 MB).
 	 */
 	public MemoryFsStateBackend() {
-		this(DEFAULT_MAX_STATE_SIZE);
+		// this(DEFAULT_MAX_STATE_SIZE);
+		this.maxTuplesInMemory = 100000;
+		this.maxStateSize = DEFAULT_MAX_STATE_SIZE;
 	}
 
 	/**
-	 * Creates a new memory state backend that accepts states whose serialized forms are
-	 * up to the given number of bytes.
 	 *
-	 * @param maxStateSize The maximal size of the serialized state
 	 */
-	public MemoryFsStateBackend(int maxStateSize) {
-		this.maxStateSize = maxStateSize;
+	public MemoryFsStateBackend(int maxTuplesInMemory) {
+		this.maxTuplesInMemory = maxTuplesInMemory;
+		this.maxStateSize = DEFAULT_MAX_STATE_SIZE;
 	}
+
+//	/**
+//	 * Creates a new memory state backend that accepts states whose serialized forms are
+//	 * up to the given number of bytes.
+//	 *
+//	 * @param maxStateSize The maximal size of the serialized state
+//	 */
+//	public MemoryFsStateBackend(int maxStateSize) {
+//		this.maxStateSize = maxStateSize;
+//	}
 
 	// ------------------------------------------------------------------------
 	//  initialization and cleanup
@@ -97,7 +110,7 @@ public class MemoryFsStateBackend extends AbstractStateBackend {
 
 	@Override
 	public <N, T> ListState<T> createListState(TypeSerializer<N> namespaceSerializer, ListStateDescriptor<T> stateDesc) throws Exception {
-		return new MemFsListState<>(keySerializer, namespaceSerializer, stateDesc);
+		return new MemFsListState<>(keySerializer, namespaceSerializer, stateDesc, maxTuplesInMemory);
 	}
 
 	@Override
