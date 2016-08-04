@@ -26,7 +26,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -38,12 +37,9 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	private static final int PRIMARY_BUCKET_SIZE = 100000;
 
-	private List primaryBucket = new ArrayList(PRIMARY_BUCKET_SIZE);
-//	private List bucket2 = new ArrayList();
+	private List<V> primaryBucket = new ArrayList<>(PRIMARY_BUCKET_SIZE);
 
 	private BufferedReader br;
-	// private FileReader reader;
-	//private RandomAccessFile raf;
 
 	private String line;
 
@@ -58,36 +54,15 @@ public class BucketList<V> implements Iterator, Iterable {
 			secondaryBucket = new PrintWriter("state.txt");
 
 			br = new BufferedReader(new FileReader("state.txt"));
-			// line = br.readLine();
-			// reader = new FileReader("state.txt");
-			// raf = new RandomAccessFile("state.txt", "r");
 			line = br.readLine();
-			if(line == null) {
-
-			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-//	private String readLine() {
-//		StringBuilder sb = new StringBuilder();
-//		try {
-//			for (int chr = reader.read(); chr != '\n' && chr != -1; chr = reader.read()) {
-//				sb.append((char) chr);
-//			}
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		return sb.toString();
-//	}
-
-
-
-
 	@Override
 	public boolean hasNext() {
-		return line != null;
+		return primaryBucket.size() > 0 || line != null;
 	}
 
 	@Override
@@ -95,7 +70,7 @@ public class BucketList<V> implements Iterator, Iterable {
 		V result = null;
 		if(primaryBucket.size() > 0) {
 			result = primaryBucket.remove(0);
-		} else {
+		} else if(line != null) {
 			result = (V)deserializer.deserialize(line);
 			try {
 				line = br.readLine();
@@ -103,14 +78,12 @@ public class BucketList<V> implements Iterator, Iterable {
 				e.printStackTrace();
 			}
 		}
-
 		return result;
 	}
 
 	// TODO thread to load primaryBucket from secondaryBucket
-
-
-
+//	private void secondaryToPrimaryBucket() {
+//	}
 
 	public void add(V value) {
 		if(primaryBucket.size() <= PRIMARY_BUCKET_SIZE) {
