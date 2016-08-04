@@ -49,7 +49,7 @@ public class MemFsListState<K, N, V>
 
 	private PrintWriter writer;
 
-	private BucketList bucketList;
+	private BucketList bucketList = new BucketList<V>();
 
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc);
@@ -85,8 +85,8 @@ public class MemFsListState<K, N, V>
 //		}
 //		return Collections.emptyList();
 
-		writer.flush();
-		return new BucketList<V>();
+		//writer.flush();
+		return bucketList;
 	}
 
 	@Override
@@ -111,9 +111,9 @@ public class MemFsListState<K, N, V>
 
 		bucketList.add(value);
 
-		JSONSerializer serializer = new JSONSerializer();
-		String json = serializer.serialize(value);
-		writer.println(json);
+//		JSONSerializer serializer = new JSONSerializer();
+//		String json = serializer.serialize(value);
+//		writer.println(json);
 	}
 
 	@Override
