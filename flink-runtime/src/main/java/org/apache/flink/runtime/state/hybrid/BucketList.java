@@ -24,6 +24,7 @@ import scala.Tuple2;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -35,9 +36,9 @@ import java.util.List;
  */
 public class BucketList<V> implements Iterator, Iterable {
 
-	private static final int PRIMARY_BUCKET_SIZE = 100000;
+	private List<V> primaryBucket;
 
-	private List<V> primaryBucket = new ArrayList<>(PRIMARY_BUCKET_SIZE);
+	private int primaryBucketSize;
 
 	private BufferedReader br;
 
@@ -49,9 +50,13 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	private JSONDeserializer deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory());
 
-	public BucketList() {
+	public BucketList(int primaryBucketSize) {
+		primaryBucket = new ArrayList<>(primaryBucketSize);
+		this.primaryBucketSize = primaryBucketSize;
+
 		try {
-			secondaryBucket = new PrintWriter("state.txt");
+			// autoflush set to true
+			secondaryBucket = new PrintWriter(new FileWriter("state.txt"), true);
 
 			br = new BufferedReader(new FileReader("state.txt"));
 			line = br.readLine();
@@ -86,7 +91,7 @@ public class BucketList<V> implements Iterator, Iterable {
 //	}
 
 	public void add(V value) {
-		if(primaryBucket.size() <= PRIMARY_BUCKET_SIZE) {
+		if(primaryBucket.size() <= primaryBucketSize) {
 			primaryBucket.add(value);
 		} else {
 			String json = serializer.serialize(value);

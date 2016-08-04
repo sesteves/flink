@@ -18,7 +18,6 @@
 
 package org.apache.flink.runtime.state.hybrid;
 
-import flexjson.JSONSerializer;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -29,8 +28,6 @@ import org.apache.flink.runtime.state.memory.AbstractMemState;
 import org.apache.flink.runtime.state.memory.AbstractMemStateSnapshot;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
 
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,26 +44,22 @@ public class MemFsListState<K, N, V>
 	extends AbstractMemState<K, N, ArrayList<V>, ListState<V>, ListStateDescriptor<V>>
 	implements ListState<V> {
 
-	private PrintWriter writer;
+	// private PrintWriter writer;
 
-	private BucketList bucketList = new BucketList<V>();
+	private BucketList<V> bucketList;
 
-	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc) {
+	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, int maxTuplesInMemory) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc);
-		try {
-			writer = new PrintWriter("state.txt");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+		bucketList = new BucketList<>(maxTuplesInMemory);
+//		try {
+//			writer = new PrintWriter("state.txt");
+//		} catch (FileNotFoundException e) {
+//			e.printStackTrace();
+//		}
 	}
 
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, HashMap<N, Map<K, ArrayList<V>>> state) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc, state);
-		try {
-			writer = new PrintWriter("state.txt");
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
 	}
 
 	@Override
