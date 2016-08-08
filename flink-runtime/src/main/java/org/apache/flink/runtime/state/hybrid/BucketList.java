@@ -69,7 +69,12 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	@Override
 	public boolean hasNext() {
-		return primaryBucket.size() > 0 || line != null;
+		if(primaryBucketIndex < primaryBucketSize  || line != null) {
+			return true;
+		} else {
+			primaryBucketIndex = 0;
+			return false;
+		}
 	}
 
 	@Override
@@ -87,6 +92,7 @@ public class BucketList<V> implements Iterator, Iterable {
 		} else {
 			primaryBucketIndex = 0;
 		}
+
 		return result;
 	}
 
