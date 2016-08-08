@@ -40,6 +40,8 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	private int primaryBucketSize;
 
+	private int primaryBucketIndex = 0;
+
 	private BufferedReader br;
 
 	private String line;
@@ -73,8 +75,8 @@ public class BucketList<V> implements Iterator, Iterable {
 	@Override
 	public V next() {
 		V result = null;
-		if(primaryBucket.size() > 0) {
-			result = primaryBucket.remove(0);
+		if(primaryBucketIndex < primaryBucketSize) {
+			result = primaryBucket.get(primaryBucketIndex++);
 		} else if(line != null) {
 			result = (V)deserializer.deserialize(line);
 			try {
@@ -82,6 +84,8 @@ public class BucketList<V> implements Iterator, Iterable {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+		} else {
+			primaryBucketIndex = 0;
 		}
 		return result;
 	}
