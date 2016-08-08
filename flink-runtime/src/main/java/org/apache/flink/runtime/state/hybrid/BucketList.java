@@ -108,6 +108,7 @@ public class BucketList<V> implements Iterator, Iterable {
 			String json = serializer.serialize(value);
 			if(first) {
 				line = json;
+				first = false;
 			} else {
 				secondaryBucket.println(json);
 			}
