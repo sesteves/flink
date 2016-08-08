@@ -80,7 +80,7 @@ public class BucketList<V> implements Iterator, Iterable {
 	@Override
 	public V next() {
 		V result = null;
-		if(primaryBucketIndex < primaryBucketSize) {
+		if(primaryBucketIndex < primaryBucket.size()) {
 			result = primaryBucket.get(primaryBucketIndex++);
 		} else if(line != null) {
 			result = (V)deserializer.deserialize(line);
