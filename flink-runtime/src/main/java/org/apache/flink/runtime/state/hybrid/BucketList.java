@@ -46,6 +46,8 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	private String line;
 
+	private boolean first = true;
+
 	private PrintWriter secondaryBucket;
 
 	JSONSerializer serializer = new JSONSerializer();
@@ -61,7 +63,6 @@ public class BucketList<V> implements Iterator, Iterable {
 			secondaryBucket = new PrintWriter(new FileWriter("state.txt"), true);
 
 			br = new BufferedReader(new FileReader("state.txt"));
-			line = br.readLine();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -105,7 +106,11 @@ public class BucketList<V> implements Iterator, Iterable {
 			primaryBucket.add(value);
 		} else {
 			String json = serializer.serialize(value);
-			secondaryBucket.println(json);
+			if(first) {
+				line = json;
+			} else {
+				secondaryBucket.println(json);
+			}
 		}
 	}
 
