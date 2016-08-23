@@ -54,6 +54,10 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	private JSONDeserializer deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory());
 
+	private long startTick = 0, endTick = 0;
+
+	private PrintWriter stats;
+
 	public BucketList(int primaryBucketSize) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
@@ -63,6 +67,7 @@ public class BucketList<V> implements Iterator, Iterable {
 			secondaryBucket = new PrintWriter(new FileWriter("state.txt"), true);
 
 			br = new BufferedReader(new FileReader("state.txt"));
+			stats = new PrintWriter("stats.txt");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -74,6 +79,9 @@ public class BucketList<V> implements Iterator, Iterable {
 			return true;
 		} else {
 			primaryBucketIndex = 0;
+			endTick = System.currentTimeMillis();
+			stats.println(endTick - startTick);
+			stats.close();
 			return false;
 		}
 	}
@@ -82,8 +90,17 @@ public class BucketList<V> implements Iterator, Iterable {
 	public V next() {
 		V result = null;
 		if(primaryBucketIndex < primaryBucket.size()) {
+			if(startTick == 0) {
+				startTick = System.currentTimeMillis();
+			}
 			result = primaryBucket.get(primaryBucketIndex++);
 		} else if(line != null) {
+			if(endTick == 0) {
+				endTick = System.currentTimeMillis();
+				stats.print(endTick - startTick + ",");
+				startTick = System.currentTimeMillis();
+			}
+
 			result = (V)deserializer.deserialize(line);
 			try {
 				line = br.readLine();
@@ -96,10 +113,6 @@ public class BucketList<V> implements Iterator, Iterable {
 
 		return result;
 	}
-
-	// TODO thread to load primaryBucket from secondaryBucket
-//	private void secondaryToPrimaryBucket() {
-//	}
 
 	public void add(V value) {
 		if(primaryBucket.size() <= primaryBucketSize) {
