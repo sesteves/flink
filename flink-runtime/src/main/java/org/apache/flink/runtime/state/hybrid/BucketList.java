@@ -23,6 +23,8 @@ import flexjson.JSONSerializer;
 import scala.Tuple2;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -67,7 +69,7 @@ public class BucketList<V> implements Iterator, Iterable {
 			secondaryBucket = new PrintWriter(new FileWriter("state.txt"), true);
 
 			br = new BufferedReader(new FileReader("state.txt"));
-			stats = new PrintWriter("stats.txt");
+			stats = new PrintWriter(new FileOutputStream(new File("stats.txt"), true));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -82,6 +84,8 @@ public class BucketList<V> implements Iterator, Iterable {
 			endTick = System.currentTimeMillis();
 			stats.println(endTick - startTick);
 			stats.close();
+			startTick = 0;
+			endTick = 0;
 			return false;
 		}
 	}
