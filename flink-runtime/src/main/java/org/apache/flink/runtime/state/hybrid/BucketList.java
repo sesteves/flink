@@ -111,8 +111,6 @@ public class BucketList<V> implements Iterator, Iterable {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-		} else {
-			primaryBucketIndex = 0;
 		}
 
 		return result;
