@@ -48,6 +48,8 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	private String line;
 
+	private String firstLine;
+
 	private boolean first = true;
 
 	private PrintWriter secondaryBucket;
@@ -86,6 +88,15 @@ public class BucketList<V> implements Iterator, Iterable {
 			stats.close();
 			startTick = 0;
 			endTick = 0;
+
+
+			try {
+				br.close();
+				br = new BufferedReader(new FileReader("state.txt"));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			line = firstLine;
 			return false;
 		}
 	}
@@ -122,7 +133,8 @@ public class BucketList<V> implements Iterator, Iterable {
 		} else {
 			String json = serializer.serialize(value);
 			if(first) {
-				line = json;
+				firstLine = json;
+				line = firstLine;
 				first = false;
 			} else {
 				secondaryBucket.println(json);
