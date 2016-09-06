@@ -142,6 +142,22 @@ public class BucketList<V> implements Iterator, Iterable {
 		}
 	}
 
+	public void purge() {
+		for(int i = 0; i < primaryBucket.size(); i++) {
+
+			V value = primaryBucket.remove(i);
+			String json = serializer.serialize(value);
+			if(first) {
+				firstLine = json;
+				line = firstLine;
+				first = false;
+			} else {
+				secondaryBucket.println(json);
+			}
+
+		}
+	}
+
 	@Override
 	public void remove() {
 	}
