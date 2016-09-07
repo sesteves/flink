@@ -45,6 +45,7 @@ import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.runtime.state.AbstractStateBackend;
 import org.apache.flink.runtime.state.StateHandle;
+import org.apache.flink.runtime.state.hybrid.MemFsListState;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
 import org.apache.flink.streaming.api.operators.OneInputStreamOperator;
@@ -439,6 +440,11 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 				if (contents == null) {
 					// if we have no state, there is nothing to do
 					continue;
+				}
+
+				if(windowState instanceof MemFsListState) {
+					System.out.println("Processing watermark! PURGING");
+					((MemFsListState) windowState).purge();
 				}
 
 				TriggerResult triggerResult = context.onEventTime(timer.timestamp);
