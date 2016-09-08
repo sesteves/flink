@@ -146,9 +146,10 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	public void purge() {
 		usePrimaryBucket = false;
-		System.out.println("Primary Bucket Size: " + primaryBucket.size());
-		for(int i = 0; i < primaryBucket.size(); i++) {
-			V value = primaryBucket.remove(i);
+		System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
+		int primaryBucketSize = primaryBucket.size();
+		for(int i = 0; i < primaryBucketSize; i++) {
+			V value = primaryBucket.remove(0);
 			String json = serializer.serialize(value);
 			if(first) {
 				firstLine = json;
@@ -158,6 +159,7 @@ public class BucketList<V> implements Iterator, Iterable {
 				secondaryBucket.println(json);
 			}
 		}
+		System.out.println("After Primary Bucket Size: " + primaryBucket.size());
 	}
 
 	@Override
