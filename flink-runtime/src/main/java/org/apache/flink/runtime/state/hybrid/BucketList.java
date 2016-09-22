@@ -91,6 +91,27 @@ public class BucketList<V> implements Iterator, Iterable {
 			startTick = 0;
 			endTick = 0;
 
+			if(!usePrimaryBucket) {
+				new Thread() {
+					@Override
+					public void run() {
+						System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
+						int primaryBucketSize = primaryBucket.size();
+						for (int i = 0; i < primaryBucketSize; i++) {
+							V value = primaryBucket.remove(0);
+							String json = serializer.serialize(value);
+							if (first) {
+								firstLine = json;
+								first = false;
+							} else {
+								secondaryBucket.println(json);
+							}
+						}
+
+						System.out.println("After Primary Bucket Size: " + primaryBucket.size());
+					}
+				}.start();
+			}
 
 			try {
 				br.close();
@@ -99,6 +120,7 @@ public class BucketList<V> implements Iterator, Iterable {
 				e.printStackTrace();
 			}
 			line = firstLine;
+
 			return false;
 		}
 	}
@@ -146,27 +168,6 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	public void purge() {
 		usePrimaryBucket = false;
-
-		new Thread() {
-			@Override
-			public void run() {
-				System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
-				int primaryBucketSize = primaryBucket.size();
-				for(int i = 0; i < primaryBucketSize; i++) {
-					V value = primaryBucket.remove(0);
-					String json = serializer.serialize(value);
-					if(first) {
-						firstLine = json;
-						line = firstLine;
-						first = false;
-					} else {
-						secondaryBucket.println(json);
-					}
-				}
-
-				System.out.println("After Primary Bucket Size: " + primaryBucket.size());
-			}
-		}.start();
 	}
 
 	@Override
