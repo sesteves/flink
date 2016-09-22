@@ -464,6 +464,8 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 		output.emitWatermark(mark);
 
 		this.currentWatermark = mark.getTimestamp();
+
+		System.out.println("currentWatermark set!");
 	}
 
 	@Override
