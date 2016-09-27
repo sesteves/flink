@@ -95,7 +95,7 @@ public class BucketList<V> implements Iterator, Iterable {
 				new Thread() {
 					@Override
 					public void run() {
-						System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
+						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
 						int primaryBucketSize = primaryBucket.size();
 						for (int i = 0; i < primaryBucketSize; i++) {
 							V value = primaryBucket.remove(0);
@@ -109,7 +109,7 @@ public class BucketList<V> implements Iterator, Iterable {
 							}
 						}
 
-						System.out.println("After Primary Bucket Size: " + primaryBucket.size());
+						// System.out.println("After Primary Bucket Size: " + primaryBucket.size());
 					}
 				}.start();
 			}

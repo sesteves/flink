@@ -443,7 +443,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 				}
 
 				if(windowState instanceof MemFsListState) {
-					System.out.println("Processing watermark! PURGING");
+					// System.out.println("Processing watermark! PURGING");
 					((MemFsListState) windowState).purge();
 				}
 
@@ -464,8 +464,6 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 		output.emitWatermark(mark);
 
 		this.currentWatermark = mark.getTimestamp();
-
-		System.out.println("currentWatermark set!");
 	}
 
 	@Override
