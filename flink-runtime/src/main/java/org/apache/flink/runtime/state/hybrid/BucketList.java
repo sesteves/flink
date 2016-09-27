@@ -102,7 +102,6 @@ public class BucketList<V> implements Iterator, Iterable {
 							String json = serializer.serialize(value);
 							if (first) {
 								firstLine = json;
-								line = firstLine;
 								first = false;
 							} else {
 								secondaryBucket.println(json);
@@ -169,6 +168,11 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	public void purge() {
 		usePrimaryBucket = false;
+	}
+
+	public void clear() {
+		primaryBucket.clear();
+		usePrimaryBucket = true;
 	}
 
 	@Override
