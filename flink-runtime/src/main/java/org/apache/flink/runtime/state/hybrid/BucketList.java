@@ -128,7 +128,7 @@ public class BucketList<V> implements Iterator, Iterable {
 	@Override
 	public V next() {
 		V result = null;
-		if(primaryBucketIndex < primaryBucket.size()) {
+		if(usePrimaryBucket && primaryBucketIndex < primaryBucket.size()) {
 			if(startTick == 0) {
 				startTick = System.currentTimeMillis();
 			}
