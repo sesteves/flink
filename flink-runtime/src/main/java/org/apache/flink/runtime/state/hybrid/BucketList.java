@@ -64,6 +64,8 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	private boolean usePrimaryBucket = true;
 
+	private boolean purgeInProgress = false;
+
 	public BucketList(int primaryBucketSize) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
@@ -92,6 +94,7 @@ public class BucketList<V> implements Iterator, Iterable {
 			endTick = 0;
 
 			if(!usePrimaryBucket) {
+				purgeInProgress = true;
 				new Thread() {
 					@Override
 					public void run() {
@@ -109,6 +112,7 @@ public class BucketList<V> implements Iterator, Iterable {
 						}
 
 						// System.out.println("After Primary Bucket Size: " + primaryBucket.size());
+						purgeInProgress = false;
 					}
 				}.start();
 			}
@@ -128,7 +132,7 @@ public class BucketList<V> implements Iterator, Iterable {
 	@Override
 	public V next() {
 		V result = null;
-		if(usePrimaryBucket && primaryBucketIndex < primaryBucket.size()) {
+		if(!purgeInProgress && primaryBucketIndex < primaryBucket.size()) {
 			if(startTick == 0) {
 				startTick = System.currentTimeMillis();
 			}
