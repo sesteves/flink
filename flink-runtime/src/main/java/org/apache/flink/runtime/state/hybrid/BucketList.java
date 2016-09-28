@@ -83,7 +83,7 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	@Override
 	public boolean hasNext() {
-		if(primaryBucketIndex < primaryBucket.size()  || line != null) {
+		if(!purgeInProgress && primaryBucketIndex < primaryBucket.size() || line != null) {
 			return true;
 		} else {
 			primaryBucketIndex = 0;
