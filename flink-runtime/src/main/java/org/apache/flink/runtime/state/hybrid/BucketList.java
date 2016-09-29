@@ -64,7 +64,9 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	private boolean usePrimaryBucket = true;
 
-	private boolean purgeInProgress = false;
+	private boolean spillInProgress = false;
+
+	private boolean abortSpilling = false;
 
 	public BucketList(int primaryBucketSize) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
@@ -83,10 +85,11 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	@Override
 	public boolean hasNext() {
-		if((!purgeInProgress && primaryBucketIndex < primaryBucket.size()) || line != null) {
+		if((!spillInProgress && primaryBucketIndex < primaryBucket.size()) || line != null) {
 			return true;
 		} else {
 			primaryBucketIndex = 0;
+			abortSpilling = false;
 
 			endTick = System.currentTimeMillis();
 			stats.println(endTick - startTick);
@@ -94,17 +97,19 @@ public class BucketList<V> implements Iterator, Iterable {
 			startTick = 0;
 			endTick = 0;
 
-			if(!usePrimaryBucket) {
-				purgeInProgress = true;
+			if(!usePrimaryBucket && !primaryBucket.isEmpty()) {
+
 				new Thread() {
 					@Override
 					public void run() {
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
 						while (!primaryBucket.isEmpty()) {
 							add(primaryBucket.remove(0));
+							if(abortSpilling)
+								break;
 						}
 						// System.out.println("After Primary Bucket Size: " + primaryBucket.size());
-						purgeInProgress = false;
+
 					}
 				}.start();
 			}
@@ -124,7 +129,10 @@ public class BucketList<V> implements Iterator, Iterable {
 	@Override
 	public V next() {
 		V result = null;
-		if(!purgeInProgress && primaryBucketIndex < primaryBucket.size()) {
+		if(primaryBucketIndex < primaryBucket.size()) {
+			if(!usePrimaryBucket)
+				abortSpilling = true;
+
 			if(startTick == 0) {
 				startTick = System.currentTimeMillis();
 			}
