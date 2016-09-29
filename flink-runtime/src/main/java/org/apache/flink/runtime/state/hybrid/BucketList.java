@@ -83,10 +83,11 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	@Override
 	public boolean hasNext() {
-		if(!purgeInProgress && primaryBucketIndex < primaryBucket.size() || line != null) {
+		if((!purgeInProgress && primaryBucketIndex < primaryBucket.size()) || line != null) {
 			return true;
 		} else {
 			primaryBucketIndex = 0;
+
 			endTick = System.currentTimeMillis();
 			stats.println(endTick - startTick);
 			stats.close();
@@ -99,18 +100,9 @@ public class BucketList<V> implements Iterator, Iterable {
 					@Override
 					public void run() {
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
-						int primaryBucketSize = primaryBucket.size();
-						for (int i = 0; i < primaryBucketSize; i++) {
-							V value = primaryBucket.remove(0);
-							String json = serializer.serialize(value);
-							if (first) {
-								firstLine = json;
-								first = false;
-							} else {
-								secondaryBucket.println(json);
-							}
+						while (!primaryBucket.isEmpty()) {
+							add(primaryBucket.remove(0));
 						}
-
 						// System.out.println("After Primary Bucket Size: " + primaryBucket.size());
 						purgeInProgress = false;
 					}
@@ -123,7 +115,7 @@ public class BucketList<V> implements Iterator, Iterable {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			line = firstLine;
+			if(firstLine != null) line = firstLine;
 
 			return false;
 		}
@@ -176,7 +168,7 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	public void clear() {
 		primaryBucket.clear();
-		usePrimaryBucket = true;
+		// usePrimaryBucket = true;
 	}
 
 	@Override
