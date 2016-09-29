@@ -105,8 +105,9 @@ public class BucketList<V> implements Iterator, Iterable {
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
 						while (!primaryBucket.isEmpty()) {
 							add(primaryBucket.remove(0));
-							if(abortSpilling)
+							if(abortSpilling) {
 								break;
+							}
 						}
 						// System.out.println("After Primary Bucket Size: " + primaryBucket.size());
 
@@ -120,7 +121,9 @@ public class BucketList<V> implements Iterator, Iterable {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			if(firstLine != null) line = firstLine;
+			if(firstLine != null) {
+				line = firstLine;
+			}
 
 			return false;
 		}
@@ -130,8 +133,9 @@ public class BucketList<V> implements Iterator, Iterable {
 	public V next() {
 		V result = null;
 		if(primaryBucketIndex < primaryBucket.size()) {
-			if(!usePrimaryBucket)
+			if(!usePrimaryBucket) {
 				abortSpilling = true;
+			}
 
 			if(startTick == 0) {
 				startTick = System.currentTimeMillis();
