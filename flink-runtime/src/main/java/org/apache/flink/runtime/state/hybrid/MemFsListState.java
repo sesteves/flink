@@ -113,6 +113,10 @@ public class MemFsListState<K, N, V>
 		bucketList.purge();
 	}
 
+	public void clean() {
+		bucketList.clear();
+	}
+
 	@Override
 	public KvStateSnapshot<K, N, ListState<V>, ListStateDescriptor<V>, MemoryStateBackend> createHeapSnapshot(byte[] bytes) {
 		return new Snapshot<>(getKeySerializer(), getNamespaceSerializer(), stateSerializer, stateDesc, bytes);

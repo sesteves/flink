@@ -532,6 +532,9 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	private void cleanup(W window,
 						AppendingState<IN, ACC> windowState,
 						MergingWindowSet<W> mergingWindows) throws Exception {
+		if(windowState instanceof MemFsListState) {
+			((MemFsListState) windowState).clean();
+		}
 		windowState.clear();
 		if (mergingWindows != null) {
 			mergingWindows.retireWindow(window);

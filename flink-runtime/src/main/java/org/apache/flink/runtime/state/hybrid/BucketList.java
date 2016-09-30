@@ -179,6 +179,7 @@ public class BucketList<V> implements Iterator, Iterable {
 	}
 
 	public void clear() {
+		System.out.println("### bucketList clear");
 		primaryBucket.clear();
 		// usePrimaryBucket = true;
 	}
