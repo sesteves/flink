@@ -32,6 +32,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
@@ -68,6 +69,8 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	private boolean abortSpilling = false;
 
+	ReentrantLock primaryBucketLock = new ReentrantLock();
+
 	public BucketList(int primaryBucketSize) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
@@ -103,12 +106,15 @@ public class BucketList<V> implements Iterator, Iterable {
 					@Override
 					public void run() {
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
+						primaryBucketLock.lock();
 						while (!primaryBucket.isEmpty()) {
 							add(primaryBucket.remove(0));
 							if(abortSpilling) {
 								break;
 							}
 						}
+						primaryBucketLock.unlock();
+
 						// System.out.println("After Primary Bucket Size: " + primaryBucket.size());
 
 					}
@@ -140,7 +146,9 @@ public class BucketList<V> implements Iterator, Iterable {
 			if(startTick == 0) {
 				startTick = System.currentTimeMillis();
 			}
+			primaryBucketLock.lock();
 			result = primaryBucket.get(primaryBucketIndex++);
+			primaryBucketLock.unlock();
 		} else if(line != null) {
 			if(endTick == 0) {
 				endTick = System.currentTimeMillis();
@@ -180,7 +188,10 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	public void clear() {
 		// System.out.println("### bucketList clear");
+		abortSpilling = true;
+		primaryBucketLock.lock();
 		primaryBucket.clear();
+		primaryBucketLock.unlock();
 		// usePrimaryBucket = true;
 	}
 
