@@ -39,9 +39,13 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class BucketList<V> implements Iterator, Iterable {
 
+	private static final double PRIMARY_BUCKET_AFTER_FLUSH_FACTOR = 0.1;
+
 	private List<V> primaryBucket;
 
-	private int primaryBucketSize;
+	private long primaryBucketSize;
+
+	private long primaryBucketAfterFlushSize;
 
 	private int primaryBucketIndex = 0;
 
@@ -65,15 +69,14 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	private boolean usePrimaryBucket = true;
 
-	private boolean spillInProgress = false;
-
 	private boolean abortSpilling = false;
 
-	ReentrantLock primaryBucketLock = new ReentrantLock();
+	private ReentrantLock primaryBucketLock = new ReentrantLock();
 
 	public BucketList(int primaryBucketSize) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
+		primaryBucketAfterFlushSize = Math.round(PRIMARY_BUCKET_AFTER_FLUSH_FACTOR * primaryBucketSize);
 
 		try {
 			// autoflush set to true
@@ -88,7 +91,7 @@ public class BucketList<V> implements Iterator, Iterable {
 
 	@Override
 	public boolean hasNext() {
-		if((!spillInProgress && primaryBucketIndex < primaryBucket.size()) || line != null) {
+		if((primaryBucketIndex < primaryBucket.size()) || line != null) {
 			return true;
 		} else {
 			primaryBucketIndex = 0;
@@ -100,14 +103,14 @@ public class BucketList<V> implements Iterator, Iterable {
 			startTick = 0;
 			endTick = 0;
 
-			if(!usePrimaryBucket && !primaryBucket.isEmpty()) {
+			if(!usePrimaryBucket && primaryBucket.size() > primaryBucketAfterFlushSize) {
 
 				new Thread() {
 					@Override
 					public void run() {
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
 						primaryBucketLock.lock();
-						while (!primaryBucket.isEmpty()) {
+						while (primaryBucket.size() > primaryBucketAfterFlushSize) {
 							add(primaryBucket.remove(0));
 							if(abortSpilling) {
 								break;
@@ -168,7 +171,8 @@ public class BucketList<V> implements Iterator, Iterable {
 	}
 
 	public void add(V value) {
-		if(usePrimaryBucket && primaryBucket.size() <= primaryBucketSize) {
+		if((usePrimaryBucket && primaryBucket.size() <= primaryBucketSize) ||
+			(!usePrimaryBucket && primaryBucket.size() <= primaryBucketAfterFlushSize)) {
 			primaryBucket.add(value);
 		} else {
 			String json = serializer.serialize(value);
