@@ -59,7 +59,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private boolean first = true;
 
-	private String secondaryBucketFName = "state-" + UUID.randomUUID().toString();
+	private String secondaryBucketFName = "state/state-" + UUID.randomUUID().toString();
 
 	private PrintWriter secondaryBucket;
 
@@ -98,6 +98,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		if((primaryBucketIndex < primaryBucket.size()) || line != null) {
 			return true;
 		} else {
+
+			System.out.println("bucketList.hasNext returned FALSE");
+
 			primaryBucketIndex = 0;
 			abortSpilling = false;
 
@@ -114,6 +117,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 					public void run() {
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
 						primaryBucketLock.lock();
+
+						System.out.println("### STARTED SPILLING!!!");
+
 						while (primaryBucket.size() > primaryBucketAfterFlushSize) {
 							add(primaryBucket.remove(0));
 							if(abortSpilling) {
@@ -155,6 +161,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			}
 			primaryBucketLock.lock();
 			result = primaryBucket.get(primaryBucketIndex++);
+
+			System.out.println("### RESULT GOTTEN FROM PRIMARY BUCKET IS NULL!!!");
+
 			primaryBucketLock.unlock();
 		} else if(line != null) {
 			if(endTick == 0) {
@@ -171,12 +180,18 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			}
 		}
 
+		if(result == null) {
+			System.out.println("### RESULT IS NULL! PrimaryBucket.size: " + primaryBucket.size() +
+				", primaryBucketIndex: " + primaryBucketIndex);
+		}
 		return result;
 	}
 
+	@Override
 	public boolean add(V value) {
 		if((usePrimaryBucket && primaryBucket.size() <= primaryBucketSize) ||
 			(!usePrimaryBucket && primaryBucket.size() <= primaryBucketAfterFlushSize)) {
+			System.out.println("### VALUE BEING ADDED IS NULL!!!");
 			primaryBucket.add(value);
 		} else {
 			String json = serializer.serialize(value);
