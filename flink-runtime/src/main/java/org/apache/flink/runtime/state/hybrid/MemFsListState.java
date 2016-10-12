@@ -44,18 +44,11 @@ public class MemFsListState<K, N, V>
 	extends AbstractMemState<K, N, ArrayList<V>, ListState<V>, ListStateDescriptor<V>>
 	implements ListState<V> {
 
-	// private PrintWriter writer;
-
-	private BucketList<V> bucketList;
+	private int maxTuplesInMemory;
 
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, int maxTuplesInMemory) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc);
-		bucketList = new BucketList<>(maxTuplesInMemory);
-//		try {
-//			writer = new PrintWriter("state.txt");
-//		} catch (FileNotFoundException e) {
-//			e.printStackTrace();
-//		}
+		this.maxTuplesInMemory = maxTuplesInMemory;
 	}
 
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, HashMap<N, Map<K, ArrayList<V>>> state) {
@@ -64,56 +57,41 @@ public class MemFsListState<K, N, V>
 
 	@Override
 	public Iterable<V> get() {
-//
-//		if (currentNSState == null) {
-//			currentNSState = state.get(currentNamespace);
-//		}
-//		if (currentNSState != null) {
-//			List<V> result = currentNSState.get(currentKey);
-//			if (result == null) {
-//				return Collections.emptyList();
-//			} else {
-//				return result;
-//			}
-//		}
-//		return Collections.emptyList();
-
-		//writer.flush();
-		return bucketList;
+		if (currentNSState == null) {
+			currentNSState = state.get(currentNamespace);
+		}
+		return currentNSState != null ?
+			currentNSState.get(currentKey) : null;
 	}
 
 	@Override
 	public void add(V value) {
-//		if (currentKey == null) {
-//			throw new RuntimeException("No key available.");
-//		}
-//
-//		if (currentNSState == null) {
-//			currentNSState = new HashMap<>();
-//			state.put(currentNamespace, currentNSState);
-//		}
-//
-//
-//		BucketList<V> list = currentNSState.get(currentKey);
-//		if (list == null) {
-//			list = new BucketList<>();
-//			currentNSState.put(currentKey, list);
-//		}
-//		list.add(value);
+		if (currentKey == null) {
+			throw new RuntimeException("No key available.");
+		}
 
+		if (currentNSState == null) {
+			currentNSState = new HashMap<>();
+			state.put(currentNamespace, currentNSState);
+		}
+
+
+		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
+		if (bucketList == null) {
+			bucketList = new BucketList<>(maxTuplesInMemory);
+			currentNSState.put(currentKey, bucketList);
+		}
 
 		bucketList.add(value);
-
-//		JSONSerializer serializer = new JSONSerializer();
-//		String json = serializer.serialize(value);
-//		writer.println(json);
 	}
 
 	public void purge() {
+		BucketList<V> bucketList = (BucketList<V>) get();
 		bucketList.purge();
 	}
 
 	public void clean() {
+		BucketList<V> bucketList = (BucketList<V>) get();
 		bucketList.clear();
 	}
 

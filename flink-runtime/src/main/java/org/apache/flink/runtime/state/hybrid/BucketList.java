@@ -32,12 +32,14 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
  *
+ * TODO: ArrayList is extended here only to provide compatibility with AbstractHeapState.
  */
-public class BucketList<V> implements Iterator, Iterable {
+public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable<V> {
 
 	private static final double PRIMARY_BUCKET_AFTER_FLUSH_FACTOR = 0.1;
 
@@ -56,6 +58,8 @@ public class BucketList<V> implements Iterator, Iterable {
 	private String firstLine;
 
 	private boolean first = true;
+
+	private String secondaryBucketFName = "state-" + UUID.randomUUID().toString();
 
 	private PrintWriter secondaryBucket;
 
@@ -80,9 +84,9 @@ public class BucketList<V> implements Iterator, Iterable {
 
 		try {
 			// autoflush set to true
-			secondaryBucket = new PrintWriter(new FileWriter("state.txt"), true);
+			secondaryBucket = new PrintWriter(new FileWriter(secondaryBucketFName), true);
 
-			br = new BufferedReader(new FileReader("state.txt"));
+			br = new BufferedReader(new FileReader(secondaryBucketFName));
 			stats = new PrintWriter(new FileOutputStream(new File("stats.txt"), true));
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -126,7 +130,7 @@ public class BucketList<V> implements Iterator, Iterable {
 
 			try {
 				br.close();
-				br = new BufferedReader(new FileReader("state.txt"));
+				br = new BufferedReader(new FileReader(secondaryBucketFName));
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -170,7 +174,7 @@ public class BucketList<V> implements Iterator, Iterable {
 		return result;
 	}
 
-	public void add(V value) {
+	public boolean add(V value) {
 		if((usePrimaryBucket && primaryBucket.size() <= primaryBucketSize) ||
 			(!usePrimaryBucket && primaryBucket.size() <= primaryBucketAfterFlushSize)) {
 			primaryBucket.add(value);
@@ -184,6 +188,7 @@ public class BucketList<V> implements Iterator, Iterable {
 				secondaryBucket.println(json);
 			}
 		}
+		return true;
 	}
 
 	public void purge() {
