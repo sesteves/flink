@@ -67,9 +67,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private JSONDeserializer deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory());
 
-	private long startTick = 0, endTick = 0;
+//	private long startTick = 0, endTick = 0;
 
-	private PrintWriter stats;
+//	private PrintWriter stats;
 
 	private boolean usePrimaryBucket = true;
 
@@ -87,7 +87,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			secondaryBucket = new PrintWriter(new FileWriter(secondaryBucketFName), true);
 
 			br = new BufferedReader(new FileReader(secondaryBucketFName));
-			stats = new PrintWriter(new FileOutputStream(new File("stats.txt"), true));
+//			stats = new PrintWriter(new FileOutputStream(new File("stats.txt"), true));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -99,16 +99,14 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			return true;
 		} else {
 
-			System.out.println("bucketList.hasNext returned FALSE");
-
 			primaryBucketIndex = 0;
 			abortSpilling = false;
 
-			endTick = System.currentTimeMillis();
-			stats.println(endTick - startTick);
-			stats.close();
-			startTick = 0;
-			endTick = 0;
+//			endTick = System.currentTimeMillis();
+//			stats.println(endTick - startTick);
+//			stats.close();
+//			startTick = 0;
+//			endTick = 0;
 
 			if(!usePrimaryBucket && primaryBucket.size() > primaryBucketAfterFlushSize) {
 
@@ -119,12 +117,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 						primaryBucketLock.lock();
 
 						while (primaryBucket.size() > primaryBucketAfterFlushSize) {
-							V element = primaryBucket.remove(0);
-							if(element == null) {
-								System.out.println("### ELEMENT IS NULL!!!!!!!!");
-							}
-
-							add(element);
+							add(primaryBucket.remove(0));
 							if(abortSpilling) {
 								break;
 							}
@@ -159,19 +152,19 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				abortSpilling = true;
 			}
 
-			if(startTick == 0) {
-				startTick = System.currentTimeMillis();
-			}
+//			if(startTick == 0) {
+//				startTick = System.currentTimeMillis();
+//			}
 			primaryBucketLock.lock();
 			result = primaryBucket.get(primaryBucketIndex++);
 			primaryBucketLock.unlock();
 
 		} else if(line != null) {
-			if(endTick == 0) {
-				endTick = System.currentTimeMillis();
-				stats.print(endTick - startTick + ",");
-				startTick = System.currentTimeMillis();
-			}
+//			if(endTick == 0) {
+//				endTick = System.currentTimeMillis();
+//				stats.print(endTick - startTick + ",");
+//				startTick = System.currentTimeMillis();
+//			}
 
 			result = (V)deserializer.deserialize(line);
 			try {
@@ -181,20 +174,11 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			}
 		}
 
-		if(result == null) {
-			System.out.println("### RESULT IS NULL! PrimaryBucket.size: " + primaryBucket.size() +
-				", primaryBucketIndex: " + primaryBucketIndex);
-		}
 		return result;
 	}
 
 	@Override
 	public boolean add(V value) {
-
-		if(value == null) {
-			System.out.println("### VALUE BEING ADDED IS NULL!!!");
-		}
-
 		if((usePrimaryBucket && primaryBucket.size() < primaryBucketSize) ||
 			(!usePrimaryBucket && primaryBucket.size() < primaryBucketAfterFlushSize)) {
 			primaryBucket.add(value);
@@ -216,7 +200,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	}
 
 	public void clear() {
-		// System.out.println("### bucketList clear");
+		System.out.println("### bucketList clear");
 		abortSpilling = true;
 		primaryBucketLock.lock();
 		primaryBucket.clear();
