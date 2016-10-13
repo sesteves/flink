@@ -164,10 +164,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			}
 			primaryBucketLock.lock();
 			result = primaryBucket.get(primaryBucketIndex++);
-
-			System.out.println("### RESULT GOTTEN FROM PRIMARY BUCKET IS NULL!!!");
-
 			primaryBucketLock.unlock();
+
 		} else if(line != null) {
 			if(endTick == 0) {
 				endTick = System.currentTimeMillis();
