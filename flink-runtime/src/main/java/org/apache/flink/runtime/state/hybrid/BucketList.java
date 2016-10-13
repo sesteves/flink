@@ -118,10 +118,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
 						primaryBucketLock.lock();
 
-						System.out.println("### STARTED SPILLING!!!");
-
 						while (primaryBucket.size() > primaryBucketAfterFlushSize) {
-							add(primaryBucket.remove(0));
+							V element = primaryBucket.remove(0);
+							if(element == null) {
+								System.out.println("### ELEMENT IS NULL!!!!!!!!");
+							}
+
+							add(element);
 							if(abortSpilling) {
 								break;
 							}
@@ -189,9 +192,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	@Override
 	public boolean add(V value) {
-		if((usePrimaryBucket && primaryBucket.size() <= primaryBucketSize) ||
-			(!usePrimaryBucket && primaryBucket.size() <= primaryBucketAfterFlushSize)) {
+
+		if(value == null) {
 			System.out.println("### VALUE BEING ADDED IS NULL!!!");
+		}
+
+		if((usePrimaryBucket && primaryBucket.size() < primaryBucketSize) ||
+			(!usePrimaryBucket && primaryBucket.size() < primaryBucketAfterFlushSize)) {
 			primaryBucket.add(value);
 		} else {
 			String json = serializer.serialize(value);
