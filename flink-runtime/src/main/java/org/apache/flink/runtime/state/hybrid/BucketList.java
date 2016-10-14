@@ -198,7 +198,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	}
 
 	public void clear() {
-		System.out.println("### bucketList clear");
+//		System.out.println("### bucketList clear");
 		abortSpilling = true;
 		primaryBucketLock.lock();
 		primaryBucket.clear();
