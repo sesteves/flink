@@ -75,10 +75,14 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private ReentrantLock primaryBucketLock = new ReentrantLock();
 
-	public BucketList(int primaryBucketSize) {
+	private BucketListShared bucketListShared;
+
+	public BucketList(int primaryBucketSize, BucketListShared bucketListShared) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
 		primaryBucketAfterFlushSize = Math.round(PRIMARY_BUCKET_AFTER_FLUSH_FACTOR * primaryBucketSize);
+
+		this.bucketListShared = bucketListShared;
 
 		try {
 			// autoflush set to true
@@ -145,6 +149,11 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	@Override
 	public V next() {
 		V result = null;
+
+		if(!usePrimaryBucket) {
+			bucketListShared.setFinalProcessing(true);
+		}
+
 		if(primaryBucketIndex < primaryBucket.size()) {
 			if(!usePrimaryBucket) {
 				abortSpilling = true;

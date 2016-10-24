@@ -46,6 +46,8 @@ public class MemFsListState<K, N, V>
 
 	private int maxTuplesInMemory;
 
+	private BucketListShared bucketListShared = new BucketListShared();
+
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, int maxTuplesInMemory) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc);
 		this.maxTuplesInMemory = maxTuplesInMemory;
@@ -78,7 +80,7 @@ public class MemFsListState<K, N, V>
 
 		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
 		if (bucketList == null) {
-			bucketList = new BucketList<>(maxTuplesInMemory);
+			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared);
 			currentNSState.put(currentKey, bucketList);
 		}
 
