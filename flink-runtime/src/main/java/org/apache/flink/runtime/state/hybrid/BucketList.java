@@ -65,10 +65,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private JSONDeserializer deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory());
 
-//	private long startTick = 0, endTick = 0;
-
-//	private PrintWriter stats;
-
 	private boolean usePrimaryBucket = true;
 
 	private boolean abortSpilling = false;
@@ -76,6 +72,10 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	private ReentrantLock primaryBucketLock = new ReentrantLock();
 
 	private BucketListShared bucketListShared;
+
+	private boolean readingFromDisk = false;
+
+	private boolean flush = true;
 
 	public BucketList(int primaryBucketSize, BucketListShared bucketListShared) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
@@ -85,8 +85,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		this.bucketListShared = bucketListShared;
 
 		try {
-			// autoflush set to true
-			secondaryBucket = new PrintWriter(new FileWriter(secondaryBucketFName), true);
+			// autoflush set to false
+			secondaryBucket = new PrintWriter(new FileWriter(secondaryBucketFName));
 
 			br = new BufferedReader(new FileReader(secondaryBucketFName));
 //			stats = new PrintWriter(new FileOutputStream(new File("stats.txt"), true));
@@ -103,12 +103,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 			primaryBucketIndex = 0;
 			abortSpilling = false;
+			flush = true;
 
-//			endTick = System.currentTimeMillis();
-//			stats.println(endTick - startTick);
-//			stats.close();
-//			startTick = 0;
-//			endTick = 0;
+			if(readingFromDisk) {
+				bucketListShared.setFinalProcessing(false);
+				readingFromDisk = false;
+			}
+
 
 			if(!usePrimaryBucket && primaryBucket.size() > primaryBucketAfterFlushSize) {
 
@@ -150,8 +151,14 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	public V next() {
 		V result = null;
 
-		if(!usePrimaryBucket) {
-			bucketListShared.setFinalProcessing(true);
+		if(flush) {
+			flush = false;
+			new Thread() {
+				@Override
+				public void run() {
+					secondaryBucket.flush();
+				}
+			}.start();
 		}
 
 		if(primaryBucketIndex < primaryBucket.size()) {
@@ -159,19 +166,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				abortSpilling = true;
 			}
 
-//			if(startTick == 0) {
-//				startTick = System.currentTimeMillis();
-//			}
 			primaryBucketLock.lock();
 			result = primaryBucket.get(primaryBucketIndex++);
 			primaryBucketLock.unlock();
 
 		} else if(line != null) {
-//			if(endTick == 0) {
-//				endTick = System.currentTimeMillis();
-//				stats.print(endTick - startTick + ",");
-//				startTick = System.currentTimeMillis();
-//			}
+			readingFromDisk = true;
+			bucketListShared.setFinalProcessing(true);
 
 			result = (V)deserializer.deserialize(line);
 			try {
