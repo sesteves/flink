@@ -77,12 +77,16 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private boolean flush = true;
 
+	private List<V> buffer;
+
 	public BucketList(int primaryBucketSize, BucketListShared bucketListShared) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
 		primaryBucketAfterFlushSize = Math.round(PRIMARY_BUCKET_AFTER_FLUSH_FACTOR * primaryBucketSize);
 
 		this.bucketListShared = bucketListShared;
+
+		buffer = new ArrayList<>(primaryBucketSize);
 
 		try {
 			// autoflush set to false
@@ -174,11 +178,15 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			readingFromDisk = true;
 			bucketListShared.setFinalProcessing(true);
 
-			result = (V)deserializer.deserialize(line);
-			try {
-				line = br.readLine();
-			} catch (IOException e) {
-				e.printStackTrace();
+			if(buffer.size() > 0) {
+				result = buffer.remove(0);
+			} else {
+				result = (V) deserializer.deserialize(line);
+				try {
+					line = br.readLine();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 
@@ -191,13 +199,17 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			(!usePrimaryBucket && primaryBucket.size() < primaryBucketAfterFlushSize)) {
 			primaryBucket.add(value);
 		} else {
-			String json = serializer.serialize(value);
-			if(first) {
-				firstLine = json;
-				line = firstLine;
-				first = false;
+			if (bucketListShared.isFinalProcessing()) {
+				buffer.add(value);
 			} else {
-				secondaryBucket.println(json);
+				String json = serializer.serialize(value);
+				if (first) {
+					firstLine = json;
+					line = firstLine;
+					first = false;
+				} else {
+					secondaryBucket.println(json);
+				}
 			}
 		}
 		return true;
