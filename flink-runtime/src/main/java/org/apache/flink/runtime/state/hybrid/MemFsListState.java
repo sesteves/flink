@@ -31,6 +31,7 @@ import org.apache.flink.runtime.state.memory.MemoryStateBackend;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 /**
  * Heap-backed partitioned {@link org.apache.flink.api.common.state.ListState} that is snapshotted
@@ -47,6 +48,17 @@ public class MemFsListState<K, N, V>
 	private int maxTuplesInMemory;
 
 	private BucketListShared bucketListShared = new BucketListShared();
+
+	private PriorityQueue<QueueElement> queue = new PriorityQueue<>();
+
+	private Thread ioThread = new Thread() {
+		@Override
+		public void run() {
+
+
+		}
+	};
+
 
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, int maxTuplesInMemory) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc);
@@ -118,4 +130,17 @@ public class MemFsListState<K, N, V>
 		}
 	}
 
+
+	class QueueElement {
+		private String fname;
+
+		private V value;
+
+		public QueueElement(String fname, V value) {
+			this.fname = fname;
+			this.value = value;
+
+		}
+
+	}
 }
