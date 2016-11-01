@@ -92,7 +92,7 @@ public class MemFsListState<K, N, V>
 
 		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
 		if (bucketList == null) {
-			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared);
+			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, queue);
 			currentNSState.put(currentKey, bucketList);
 		}
 

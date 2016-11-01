@@ -30,6 +30,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -79,7 +80,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private List<V> buffer;
 
-	public BucketList(int primaryBucketSize, BucketListShared bucketListShared) {
+	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, PriorityQueue queue) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
 		primaryBucketAfterFlushSize = Math.round(PRIMARY_BUCKET_AFTER_FLUSH_FACTOR * primaryBucketSize);
