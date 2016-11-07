@@ -35,7 +35,6 @@ import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- *
  * TODO: ArrayList is extended here only to provide compatibility with AbstractHeapState.
  */
 public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable<V> {
@@ -78,7 +77,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private boolean flush = true;
 
-	private List<V> buffer;
+	private List readQueue, writeQueue;
+
+//	private List<V> buffer;
 
 	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, PriorityQueue queue) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
@@ -87,7 +88,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 		this.bucketListShared = bucketListShared;
 
-		buffer = new ArrayList<>(primaryBucketSize);
+//		buffer = new ArrayList<>(primaryBucketSize);
 
 		try {
 			// autoflush set to false
@@ -102,7 +103,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	@Override
 	public boolean hasNext() {
-		if((primaryBucketIndex < primaryBucket.size()) || line != null) {
+		if ((primaryBucketIndex < primaryBucket.size()) || line != null) {
 			return true;
 		} else {
 
@@ -110,13 +111,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			abortSpilling = false;
 			flush = true;
 
-			if(readingFromDisk) {
+			if (readingFromDisk) {
 				bucketListShared.setFinalProcessing(false);
 				readingFromDisk = false;
 			}
 
 
-			if(!usePrimaryBucket && primaryBucket.size() > primaryBucketAfterFlushSize) {
+			if (!usePrimaryBucket && primaryBucket.size() > primaryBucketAfterFlushSize) {
 
 				new Thread() {
 					@Override
@@ -126,7 +127,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 						while (primaryBucket.size() > primaryBucketAfterFlushSize) {
 							add(primaryBucket.remove(0));
-							if(abortSpilling) {
+							if (abortSpilling) {
 								break;
 							}
 						}
@@ -144,7 +145,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			if(firstLine != null) {
+			if (firstLine != null) {
 				line = firstLine;
 			}
 
@@ -156,7 +157,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	public V next() {
 		V result = null;
 
-		if(flush) {
+		if (flush) {
 			flush = false;
 			new Thread() {
 				@Override
@@ -166,8 +167,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			}.start();
 		}
 
-		if(primaryBucketIndex < primaryBucket.size()) {
-			if(!usePrimaryBucket) {
+		if (primaryBucketIndex < primaryBucket.size()) {
+			if (!usePrimaryBucket) {
 				abortSpilling = true;
 			}
 
@@ -175,20 +176,20 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			result = primaryBucket.get(primaryBucketIndex++);
 			primaryBucketLock.unlock();
 
-		} else if(line != null) {
+		} else if (line != null) {
 			readingFromDisk = true;
 			bucketListShared.setFinalProcessing(true);
 
-			if(buffer.size() > 0) {
-				result = buffer.remove(0);
-			} else {
-				result = (V) deserializer.deserialize(line);
-				try {
-					line = br.readLine();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
+//			if(buffer.size() > 0) {
+//				result = buffer.remove(0);
+//			} else {
+			result = (V) deserializer.deserialize(line);
+			try {
+				line = br.readLine();
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
+//			}
 		}
 
 		return result;
@@ -196,22 +197,24 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	@Override
 	public boolean add(V value) {
-		if((usePrimaryBucket && primaryBucket.size() < primaryBucketSize) ||
+		if ((usePrimaryBucket && primaryBucket.size() < primaryBucketSize) ||
 			(!usePrimaryBucket && primaryBucket.size() < primaryBucketAfterFlushSize)) {
 			primaryBucket.add(value);
 		} else {
-			if (bucketListShared.isFinalProcessing()) {
-				buffer.add(value);
+//			if (bucketListShared.isFinalProcessing()) {
+//				buffer.add(value);
+//			} else {
+			String json = serializer.serialize(value);
+			if (first) {
+				firstLine = json;
+				line = firstLine;
+				first = false;
 			} else {
-				String json = serializer.serialize(value);
-				if (first) {
-					firstLine = json;
-					line = firstLine;
-					first = false;
-				} else {
-					secondaryBucket.println(json);
-				}
+				secondaryBucketFName
+				writeQueue.add(json);
+				//secondaryBucket.println(json);
 			}
+//			}
 		}
 		return true;
 	}
