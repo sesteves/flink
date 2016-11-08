@@ -83,8 +83,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 //	private List<V> buffer;
 
-	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, List<QueueElement> readQueue,
-					  List<QueueElement> writeQueue, Map<String, List<String>> readResults) {
+	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, List<QueueElement> readQueue, List<QueueElement> writeQueue, Map<String, List<String>> readResults) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
 		primaryBucketAfterFlushSize = Math.round(PRIMARY_BUCKET_AFTER_FLUSH_FACTOR * primaryBucketSize);
@@ -192,18 +191,18 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 //			} else {
 			result = (V) deserializer.deserialize(line);
 //			try {
-				// add request
-				readQueue.add(new QueueElement(secondaryBucketFName, null));
+			// add request
+			readQueue.add(new QueueElement(secondaryBucketFName, null));
 
-				// collect result
-				while(!readResults.containsKey(secondaryBucketFName)) {
-				}
-				List<String> results = readResults.get(secondaryBucketFName);
-				while(results.isEmpty()) {
-				}
-				line = results.remove(0);
+			// collect result
+			while (!readResults.containsKey(secondaryBucketFName)) {
+			}
+			List<String> results = readResults.get(secondaryBucketFName);
+			while (results.isEmpty()) {
+			}
+			line = results.remove(0);
 
-				// line = br.readLine();
+			// line = br.readLine();
 //			} catch (IOException e) {
 //				e.printStackTrace();
 //			}
@@ -228,7 +227,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				line = firstLine;
 				first = false;
 			} else {
-				writeQueue.add(new QueueElement(secondaryBucketFName,json));
+				writeQueue.add(new QueueElement(secondaryBucketFName, json));
 				//secondaryBucket.println(json);
 			}
 //			}

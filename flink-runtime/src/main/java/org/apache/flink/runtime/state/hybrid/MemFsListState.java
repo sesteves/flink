@@ -78,7 +78,7 @@ public class MemFsListState<K, N, V>
 						}
 
 						String value = br.readLine();
-						List results = readResults.get(element.getFName());
+						List<String> results = readResults.get(element.getFName());
 						if(results == null) {
 							results = new ArrayList<>();
 							readResults.put(element.getFName(), results);
@@ -113,6 +113,7 @@ public class MemFsListState<K, N, V>
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, int maxTuplesInMemory) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc);
 		this.maxTuplesInMemory = maxTuplesInMemory;
+		ioThread.start();
 	}
 
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, HashMap<N, Map<K, ArrayList<V>>> state) {
