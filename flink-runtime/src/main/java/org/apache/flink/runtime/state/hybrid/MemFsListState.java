@@ -34,6 +34,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,8 +55,8 @@ public class MemFsListState<K, N, V>
 
 	private BucketListShared bucketListShared = new BucketListShared();
 
-	// TODO use  Collections.synchronizedList()
-	private List<QueueElement> readQueue = new ArrayList<>(), writeQueue = new ArrayList<>();
+	private List<QueueElement> readQueue = Collections.synchronizedList(new ArrayList<QueueElement>()),
+		writeQueue = Collections.synchronizedList(new ArrayList<QueueElement>());
 
 	private Map<String, List<String>> readResults = new HashMap<>();
 
