@@ -30,6 +30,7 @@ import org.apache.flink.runtime.state.memory.MemoryStateBackend;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -90,7 +91,7 @@ public class MemFsListState<K, N, V>
 
 						PrintWriter pw = writeFiles.get(element.getFName());
 						if (pw == null) {
-							pw = new PrintWriter(element.getFName());
+							pw = new PrintWriter(new FileWriter(element.getFName()), true);
 							writeFiles.put(element.getFName(), pw);
 						}
 						pw.print(element.getValue());
