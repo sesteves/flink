@@ -25,12 +25,19 @@ public class QueueElement {
 
 	private String fname;
 
-	private String data;
+	private String value;
 
-	public QueueElement(String fname, String data) {
+	public QueueElement(String fname, String value) {
 		this.fname = fname;
-		this.data = data;
+		this.value = value;
 	}
 
+	public String getFName() {
+		return fname;
+	}
+
+	public String getValue() {
+		return value;
+	}
 
 }

@@ -30,7 +30,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.PriorityQueue;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -77,16 +77,23 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private boolean flush = true;
 
-	private List readQueue, writeQueue;
+	private List<QueueElement> readQueue, writeQueue;
+
+	private Map<String, List<String>> readResults;
 
 //	private List<V> buffer;
 
-	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, PriorityQueue queue) {
+	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, List<QueueElement> readQueue,
+					  List<QueueElement> writeQueue, Map<String, List<String>> readResults) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
 		primaryBucketAfterFlushSize = Math.round(PRIMARY_BUCKET_AFTER_FLUSH_FACTOR * primaryBucketSize);
 
 		this.bucketListShared = bucketListShared;
+
+		this.readQueue = readQueue;
+		this.writeQueue = writeQueue;
+		this.readResults = readResults;
 
 //		buffer = new ArrayList<>(primaryBucketSize);
 
@@ -184,11 +191,22 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 //				result = buffer.remove(0);
 //			} else {
 			result = (V) deserializer.deserialize(line);
-			try {
-				line = br.readLine();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+//			try {
+				// add request
+				readQueue.add(new QueueElement(secondaryBucketFName, null));
+
+				// collect result
+				while(!readResults.containsKey(secondaryBucketFName)) {
+				}
+				List<String> results = readResults.get(secondaryBucketFName);
+				while(results.isEmpty()) {
+				}
+				line = results.remove(0);
+
+				// line = br.readLine();
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
 //			}
 		}
 
@@ -210,8 +228,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				line = firstLine;
 				first = false;
 			} else {
-				secondaryBucketFName
-				writeQueue.add(json);
+				writeQueue.add(new QueueElement(secondaryBucketFName,json));
 				//secondaryBucket.println(json);
 			}
 //			}

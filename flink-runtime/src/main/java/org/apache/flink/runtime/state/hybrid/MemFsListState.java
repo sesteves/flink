@@ -28,10 +28,14 @@ import org.apache.flink.runtime.state.memory.AbstractMemState;
 import org.apache.flink.runtime.state.memory.AbstractMemStateSnapshot;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 
 /**
  * Heap-backed partitioned {@link org.apache.flink.api.common.state.ListState} that is snapshotted
@@ -49,12 +53,58 @@ public class MemFsListState<K, N, V>
 
 	private BucketListShared bucketListShared = new BucketListShared();
 
-	private PriorityQueue<QueueElement> queue = new PriorityQueue<>();
+	// TODO use  Collections.synchronizedList()
+	private List<QueueElement> readQueue = new ArrayList<>(), writeQueue = new ArrayList<>();
+
+	private Map<String, List<String>> readResults = new HashMap<>();
 
 	private Thread ioThread = new Thread() {
 		@Override
 		public void run() {
 
+			try {
+				Map<String, BufferedReader> readFiles = new HashMap<>();
+				Map<String, PrintWriter> writeFiles = new HashMap<>();
+				QueueElement element;
+				while (true) {
+
+					if (readQueue.size() > 0) {
+						element = readQueue.remove(0);
+
+						BufferedReader br = readFiles.get(element.getFName());
+						if(br == null) {
+							br = new BufferedReader(new FileReader(element.getFName()));
+							readFiles.put(element.getFName(), br);
+						}
+
+						String value = br.readLine();
+						List results = readResults.get(element.getFName());
+						if(results == null) {
+							results = new ArrayList<>();
+							readResults.put(element.getFName(), results);
+						}
+						results.add(value);
+
+					} else if (writeQueue.size() > 0) {
+						element = writeQueue.remove(0);
+
+						PrintWriter pw = writeFiles.get(element.getFName());
+						if (pw == null) {
+							pw = new PrintWriter(element.getFName());
+							writeFiles.put(element.getFName(), pw);
+						}
+						pw.print(element.getValue());
+
+					} else {
+						Thread.sleep(10);
+					}
+
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 
 		}
 	};
@@ -92,7 +142,7 @@ public class MemFsListState<K, N, V>
 
 		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
 		if (bucketList == null) {
-			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, queue);
+			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, readResults);
 			currentNSState.put(currentKey, bucketList);
 		}
 
@@ -128,19 +178,5 @@ public class MemFsListState<K, N, V>
 		public KvState<K, N, ListState<V>, ListStateDescriptor<V>, MemoryStateBackend> createMemState(HashMap<N, Map<K, ArrayList<V>>> stateMap) {
 			return new MemFsListState<>(keySerializer, namespaceSerializer, stateDesc, stateMap);
 		}
-	}
-
-
-	class QueueElement {
-		private String fname;
-
-		private V value;
-
-		public QueueElement(String fname, V value) {
-			this.fname = fname;
-			this.value = value;
-
-		}
-
 	}
 }
