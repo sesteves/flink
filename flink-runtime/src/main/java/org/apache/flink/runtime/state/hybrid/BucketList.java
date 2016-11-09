@@ -199,7 +199,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			// collect result
 			while(readResults.isEmpty()) {
 			}
-			line = readResults.poll();
+			String value = readResults.poll();
+			line = "".equals(value) ? null : value;
 
 			// line = br.readLine();
 //			} catch (IOException e) {
