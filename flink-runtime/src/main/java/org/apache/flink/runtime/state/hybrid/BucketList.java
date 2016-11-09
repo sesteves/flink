@@ -22,11 +22,6 @@ import flexjson.JSONDeserializer;
 import flexjson.JSONSerializer;
 import scala.Tuple2;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -51,7 +46,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private int primaryBucketIndex = 0;
 
-	private BufferedReader br;
+//	private BufferedReader br;
 
 	private String line;
 
@@ -61,7 +56,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private String secondaryBucketFName = "state/state-" + UUID.randomUUID().toString();
 
-	private PrintWriter secondaryBucket;
+//	private PrintWriter secondaryBucket;
 
 	JSONSerializer serializer = new JSONSerializer();
 
@@ -98,15 +93,15 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 //		buffer = new ArrayList<>(primaryBucketSize);
 
-		try {
+//		try {
 			// autoflush set to false
-			secondaryBucket = new PrintWriter(new FileWriter(secondaryBucketFName));
+//			secondaryBucket = new PrintWriter(new FileWriter(secondaryBucketFName));
 
-			br = new BufferedReader(new FileReader(secondaryBucketFName));
+//			br = new BufferedReader(new FileReader(secondaryBucketFName));
 //			stats = new PrintWriter(new FileOutputStream(new File("stats.txt"), true));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 	}
 
 	@Override
@@ -147,12 +142,12 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				}.start();
 			}
 
-			try {
-				br.close();
-				br = new BufferedReader(new FileReader(secondaryBucketFName));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+//			try {
+//				br.close();
+//				br = new BufferedReader(new FileReader(secondaryBucketFName));
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
 			if (firstLine != null) {
 				line = firstLine;
 			}
@@ -165,15 +160,15 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	public V next() {
 		V result = null;
 
-		if (flush) {
-			flush = false;
-			new Thread() {
-				@Override
-				public void run() {
-					secondaryBucket.flush();
-				}
-			}.start();
-		}
+//		if (flush) {
+//			flush = false;
+//			new Thread() {
+//				@Override
+//				public void run() {
+//					secondaryBucket.flush();
+//				}
+//			}.start();
+//		}
 
 		if (primaryBucketIndex < primaryBucket.size()) {
 			if (!usePrimaryBucket) {
