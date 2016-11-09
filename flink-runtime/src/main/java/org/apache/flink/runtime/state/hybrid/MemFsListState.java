@@ -81,13 +81,14 @@ public class MemFsListState<K, N, V>
 						}
 
 						String value = br.readLine();
-						Queue<String> results = readResults.get(element.getFName());
-						if(results == null) {
-							results = new ConcurrentLinkedQueue<>();
-							readResults.put(element.getFName(), results);
+						if(value != null) {
+							Queue<String> results = readResults.get(element.getFName());
+							if (results == null) {
+								results = new ConcurrentLinkedQueue<>();
+								readResults.put(element.getFName(), results);
+							}
+							results.add(value);
 						}
-						results.add(value);
-
 					} else if (!writeQueue.isEmpty()) {
 						element = writeQueue.poll();
 
