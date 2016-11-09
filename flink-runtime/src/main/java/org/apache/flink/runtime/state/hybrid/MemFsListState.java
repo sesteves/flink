@@ -96,7 +96,7 @@ public class MemFsListState<K, N, V>
 							pw = new PrintWriter(new FileWriter(element.getFName()), true);
 							writeFiles.put(element.getFName(), pw);
 						}
-						pw.print(element.getValue());
+						pw.println(element.getValue());
 
 					} else {
 						Thread.sleep(10);

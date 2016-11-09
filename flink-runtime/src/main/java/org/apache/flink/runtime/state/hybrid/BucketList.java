@@ -227,7 +227,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				line = firstLine;
 				first = false;
 			} else {
-				writeQueue.add(new QueueElement(secondaryBucketFName, json + '\n'));
+				writeQueue.add(new QueueElement(secondaryBucketFName, json));
 				//secondaryBucket.println(json);
 			}
 //			}
