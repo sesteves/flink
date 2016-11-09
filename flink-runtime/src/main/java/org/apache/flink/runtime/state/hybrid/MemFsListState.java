@@ -80,15 +80,15 @@ public class MemFsListState<K, N, V>
 							readFiles.put(element.getFName(), br);
 						}
 
+						Queue<String> results = readResults.get(element.getFName());
+//						if (results == null) {
+//							results = new ConcurrentLinkedQueue<>();
+//							readResults.put(element.getFName(), results);
+//						}
+
 						String value = br.readLine();
-						if(value != null) {
-							Queue<String> results = readResults.get(element.getFName());
-							if (results == null) {
-								results = new ConcurrentLinkedQueue<>();
-								readResults.put(element.getFName(), results);
-							}
-							results.add(value);
-						}
+						results.add(value == null ? "" : value);
+
 					} else if (!writeQueue.isEmpty()) {
 						element = writeQueue.poll();
 

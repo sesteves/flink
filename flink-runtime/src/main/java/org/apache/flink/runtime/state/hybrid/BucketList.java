@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -80,7 +81,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private Queue<QueueElement> readQueue, writeQueue;
 
-	private Map<String, Queue<String>> readResults;
+	private Queue<String> readResults = new ConcurrentLinkedQueue<>();
 
 //	private List<V> buffer;
 
@@ -93,7 +94,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 		this.readQueue = readQueue;
 		this.writeQueue = writeQueue;
-		this.readResults = readResults;
+		readResults.put(secondaryBucketFName, this.readResults);
 
 //		buffer = new ArrayList<>(primaryBucketSize);
 
@@ -196,12 +197,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			readQueue.add(new QueueElement(secondaryBucketFName, null));
 
 			// collect result
-			while (!readResults.containsKey(secondaryBucketFName)) {
+			while(readResults.isEmpty()) {
 			}
-			Queue<String> results = readResults.get(secondaryBucketFName);
-			while (results.isEmpty()) {
-			}
-			line = results.poll();
+			line = readResults.poll();
 
 			// line = br.readLine();
 //			} catch (IOException e) {
