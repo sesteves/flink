@@ -38,6 +38,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Heap-backed partitioned {@link org.apache.flink.api.common.state.ListState} that is snapshotted
@@ -58,7 +59,7 @@ public class MemFsListState<K, N, V>
 	private List<QueueElement> readQueue = Collections.synchronizedList(new ArrayList<QueueElement>()),
 		writeQueue = Collections.synchronizedList(new ArrayList<QueueElement>());
 
-	private Map<String, List<String>> readResults = new HashMap<>();
+	private Map<String, List<String>> readResults = new ConcurrentHashMap<>();
 
 	private Thread ioThread = new Thread() {
 		@Override
@@ -82,7 +83,7 @@ public class MemFsListState<K, N, V>
 						String value = br.readLine();
 						List<String> results = readResults.get(element.getFName());
 						if(results == null) {
-							results = new ArrayList<>();
+							results = Collections.synchronizedList(new ArrayList<String>());
 							readResults.put(element.getFName(), results);
 						}
 						results.add(value);
