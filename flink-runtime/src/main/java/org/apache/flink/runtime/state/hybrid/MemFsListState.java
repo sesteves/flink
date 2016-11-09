@@ -38,7 +38,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Heap-backed partitioned {@link org.apache.flink.api.common.state.ListState} that is snapshotted
@@ -56,10 +58,10 @@ public class MemFsListState<K, N, V>
 
 	private BucketListShared bucketListShared = new BucketListShared();
 
-	private List<QueueElement> readQueue = Collections.synchronizedList(new ArrayList<QueueElement>()),
-		writeQueue = Collections.synchronizedList(new ArrayList<QueueElement>());
+	private Queue<QueueElement> readQueue = new ConcurrentLinkedQueue<>(),
+		writeQueue = new ConcurrentLinkedQueue<>();
 
-	private Map<String, List<String>> readResults = new ConcurrentHashMap<>();
+	private Map<String, Queue<String>> readResults = new ConcurrentHashMap<>();
 
 	private Thread ioThread = new Thread() {
 		@Override
@@ -71,8 +73,8 @@ public class MemFsListState<K, N, V>
 				QueueElement element;
 				while (true) {
 
-					if (readQueue.size() > 0) {
-						element = readQueue.remove(0);
+					if (!readQueue.isEmpty()) {
+						element = readQueue.poll();
 
 						BufferedReader br = readFiles.get(element.getFName());
 						if(br == null) {
@@ -81,15 +83,15 @@ public class MemFsListState<K, N, V>
 						}
 
 						String value = br.readLine();
-						List<String> results = readResults.get(element.getFName());
+						Queue<String> results = readResults.get(element.getFName());
 						if(results == null) {
-							results = Collections.synchronizedList(new ArrayList<String>());
+							results = new ConcurrentLinkedQueue<>();
 							readResults.put(element.getFName(), results);
 						}
 						results.add(value);
 
-					} else if (writeQueue.size() > 0) {
-						element = writeQueue.remove(0);
+					} else if (!writeQueue.isEmpty()) {
+						element = writeQueue.poll();
 
 						PrintWriter pw = writeFiles.get(element.getFName());
 						if (pw == null) {

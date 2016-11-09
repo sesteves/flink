@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -77,13 +78,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private boolean flush = true;
 
-	private List<QueueElement> readQueue, writeQueue;
+	private Queue<QueueElement> readQueue, writeQueue;
 
-	private Map<String, List<String>> readResults;
+	private Map<String, Queue<String>> readResults;
 
 //	private List<V> buffer;
 
-	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, List<QueueElement> readQueue, List<QueueElement> writeQueue, Map<String, List<String>> readResults) {
+	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue, Queue<QueueElement> writeQueue, Map<String, Queue<String>> readResults) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
 		primaryBucketAfterFlushSize = Math.round(PRIMARY_BUCKET_AFTER_FLUSH_FACTOR * primaryBucketSize);
@@ -197,10 +198,10 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			// collect result
 			while (!readResults.containsKey(secondaryBucketFName)) {
 			}
-			List<String> results = readResults.get(secondaryBucketFName);
+			Queue<String> results = readResults.get(secondaryBucketFName);
 			while (results.isEmpty()) {
 			}
-			line = results.remove(0);
+			line = results.poll();
 
 			// line = br.readLine();
 //			} catch (IOException e) {
