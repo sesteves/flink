@@ -59,6 +59,7 @@ public class MemFsListState<K, N, V>
 	private Queue<QueueElement> readQueue = new ConcurrentLinkedQueue<>(),
 		writeQueue = new ConcurrentLinkedQueue<>();
 
+	// TODO clean elements
 	private Map<String, Queue<String>> readResults = new ConcurrentHashMap<>();
 
 	private Thread ioThread = new Thread() {
@@ -66,6 +67,7 @@ public class MemFsListState<K, N, V>
 		public void run() {
 
 			try {
+				// TODO clean elements
 				Map<String, BufferedReader> readFiles = new HashMap<>();
 				Map<String, PrintWriter> writeFiles = new HashMap<>();
 				QueueElement element;

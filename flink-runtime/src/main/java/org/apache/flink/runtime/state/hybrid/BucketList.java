@@ -134,7 +134,14 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 						while (primaryBucket.size() > primaryBucketAfterFlushSize) {
 							add(primaryBucket.remove(0));
+
+							// TODO make more efficient add
+							// String json = serializer.serialize(value);
+
+
 							if (abortSpilling) {
+								// TODO flush string builder
+
 								break;
 							}
 						}
