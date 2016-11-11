@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.state.hybrid;
 
+import flexjson.JSONSerializer;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -35,6 +36,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,6 +56,8 @@ public class MemFsListState<K, N, V>
 
 	private int maxTuplesInMemory;
 
+	private JSONSerializer serializer = new JSONSerializer();
+
 	private BucketListShared bucketListShared = new BucketListShared();
 
 	private Queue<QueueElement> readQueue = new ConcurrentLinkedQueue<>(),
@@ -61,6 +65,8 @@ public class MemFsListState<K, N, V>
 
 	// TODO clean elements
 	private Map<String, Queue<String>> readResults = new ConcurrentHashMap<>();
+
+	private Map<String, List<V>> primaryBuckets = new ConcurrentHashMap<>();
 
 	private Thread ioThread = new Thread() {
 		@Override
@@ -99,7 +105,14 @@ public class MemFsListState<K, N, V>
 							pw = new PrintWriter(new FileWriter(element.getFName()), true);
 							writeFiles.put(element.getFName(), pw);
 						}
-						pw.println(element.getValue());
+
+						String value;
+						if("".equals(element.getValue())) {
+							value = serializer.serialize(primaryBuckets.get(element.getFName()).remove(0));
+						} else {
+							value = element.getValue();
+						}
+						pw.println(value);
 
 					} else {
 						Thread.sleep(10);
@@ -150,6 +163,7 @@ public class MemFsListState<K, N, V>
 		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
 		if (bucketList == null) {
 			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, readResults);
+			primaryBuckets.put(bucketList.getSecondaryBucketFName(), bucketList.getPrimaryBucket());
 			currentNSState.put(currentKey, bucketList);
 		}
 

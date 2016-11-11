@@ -131,9 +131,20 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 					public void run() {
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
 						primaryBucketLock.lock();
+						for(int i = 0; i < primaryBucket.size() -  primaryBucketAfterFlushSize; i++) {
+						// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
 
-						while (primaryBucket.size() > primaryBucketAfterFlushSize) {
-							add(primaryBucket.remove(0));
+							if (first) {
+								firstLine = serializer.serialize(primaryBucket.remove(0));
+								line = firstLine;
+								first = false;
+							} else {
+								writeQueue.add(new QueueElement(secondaryBucketFName, ""));
+								//secondaryBucket.println(json);
+							}
+
+
+							// add(primaryBucket.remove(0));
 
 							// TODO make more efficient add
 							// String json = serializer.serialize(value);
@@ -261,5 +272,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	@Override
 	public Iterator iterator() {
 		return this;
+	}
+
+	public String getSecondaryBucketFName() {
+		return secondaryBucketFName;
+	}
+
+	public List<V> getPrimaryBucket() {
+		return primaryBucket;
 	}
 }
