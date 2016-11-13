@@ -211,7 +211,11 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			readQueue.add(new QueueElement(secondaryBucketFName, null));
 
 			// collect result
+			long startTick = System.currentTimeMillis();
 			while(readResults.isEmpty()) {
+				if(System.currentTimeMillis() - startTick > 2000) {
+					System.out.println("taking to long to obtain results...");
+				}
 			}
 			String value = readResults.poll();
 			line = "".equals(value) ? null : value;
