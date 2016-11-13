@@ -82,8 +82,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private Queue<String> readResults = new ConcurrentLinkedQueue<>();
 
-//	private List<V> buffer;
-
 	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue, Queue<QueueElement> writeQueue, Map<String, Queue<String>> readResults) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
@@ -111,9 +109,10 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	@Override
 	public boolean hasNext() {
-		if ((primaryBucketIndex < primaryBucket.size()) || line != null) {
+		if (primaryBucketIndex < primaryBucket.size() || line != null) {
 			return true;
 		} else {
+			System.out.println("hasNext called for " + secondaryBucketFName);
 
 			primaryBucketIndex = 0;
 			abortSpilling = false;
@@ -153,7 +152,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 							if (abortSpilling) {
 								// TODO flush string builder
+								System.out.println("spilling aborted...");
 
+								writeQueue.clear();
 								break;
 							}
 						}
@@ -206,9 +207,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			readingFromDisk = true;
 			bucketListShared.setFinalProcessing(true);
 
-//			if(buffer.size() > 0) {
-//				result = buffer.remove(0);
-//			} else {
 			result = (V) deserializer.deserialize(line);
 //			try {
 			// add request
@@ -236,9 +234,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			(!usePrimaryBucket && primaryBucket.size() < primaryBucketAfterFlushSize)) {
 			primaryBucket.add(value);
 		} else {
-//			if (bucketListShared.isFinalProcessing()) {
-//				buffer.add(value);
-//			} else {
 			String json = serializer.serialize(value);
 			if (first) {
 				firstLine = json;
@@ -248,7 +243,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				writeQueue.add(new QueueElement(secondaryBucketFName, json));
 				//secondaryBucket.println(json);
 			}
-//			}
 		}
 		return true;
 	}
