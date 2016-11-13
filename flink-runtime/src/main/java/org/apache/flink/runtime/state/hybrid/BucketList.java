@@ -22,9 +22,6 @@ import flexjson.JSONDeserializer;
 import flexjson.JSONSerializer;
 import scala.Tuple2;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -60,7 +57,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private String secondaryBucketFName = "state/state-" + UUID.randomUUID().toString();
 
-	private PrintWriter secondaryBucket;
+//	private PrintWriter secondaryBucket;
 
 	JSONSerializer serializer = new JSONSerializer();
 
@@ -95,16 +92,16 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 //		buffer = new ArrayList<>(primaryBucketSize);
 
-		try {
+//		try {
 			// create file
-			secondaryBucket = new PrintWriter(new FileWriter(secondaryBucketFName));
-			secondaryBucket.close();
+//			secondaryBucket = new PrintWriter(new FileWriter(secondaryBucketFName));
+//			secondaryBucket.close();
 
 //			br = new BufferedReader(new FileReader(secondaryBucketFName));
 //			stats = new PrintWriter(new FileOutputStream(new File("stats.txt"), true));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 	}
 
 	@Override
@@ -131,6 +128,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 					public void run() {
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
 						primaryBucketLock.lock();
+						System.out.println("spilling...");
 						for(int i = 0; i < primaryBucket.size() -  primaryBucketAfterFlushSize; i++) {
 						// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
 

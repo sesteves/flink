@@ -68,14 +68,15 @@ public class MemFsListState<K, N, V>
 
 	private Map<String, BucketList<V>> bucketLists = new ConcurrentHashMap<>();
 
+	private Map<String, BufferedReader> readFiles = new HashMap<>();
+	private Map<String, PrintWriter> writeFiles = new HashMap<>();
+
+
 	private Thread ioThread = new Thread() {
 		@Override
 		public void run() {
 
 			try {
-				// TODO clean elements
-				Map<String, BufferedReader> readFiles = new HashMap<>();
-				Map<String, PrintWriter> writeFiles = new HashMap<>();
 				QueueElement element;
 				while (true) {
 
@@ -84,6 +85,7 @@ public class MemFsListState<K, N, V>
 
 						BufferedReader br = readFiles.get(element.getFName());
 						if(br == null) {
+							System.out.println("opening file " + element.getFName());
 							br = new BufferedReader(new FileReader(element.getFName()));
 							readFiles.put(element.getFName(), br);
 						}
@@ -102,24 +104,26 @@ public class MemFsListState<K, N, V>
 
 						PrintWriter pw = writeFiles.get(element.getFName());
 						if (pw == null) {
+							System.out.println("creating file " + element.getFName());
 							pw = new PrintWriter(new FileWriter(element.getFName()), true);
 							writeFiles.put(element.getFName(), pw);
 						}
 
-						String value;
 						if("".equals(element.getValue())) {
 							BucketList<V> bucketList = bucketLists.get(element.getFName());
 							bucketList.getPrimaryBucketLock().lock();
 							List<V> primaryBucket = bucketList.getPrimaryBucket();
-							value = serializer.serialize(primaryBucket.remove(0));
+							if(!primaryBucket.isEmpty()) {
+								String value = serializer.serialize(primaryBucket.remove(0));
+								pw.println(value);
+							}
 							bucketList.getPrimaryBucketLock().unlock();
 						} else {
-							value = element.getValue();
+							pw.println(element.getValue());
 						}
-						pw.println(value);
 
 					} else {
-						Thread.sleep(10);
+						Thread.sleep(1);
 					}
 
 				}
@@ -180,8 +184,14 @@ public class MemFsListState<K, N, V>
 	}
 
 	public void clean() {
+		System.out.println("clean called...");
 		BucketList<V> bucketList = (BucketList<V>) get();
 		bucketList.clear();
+		String id = bucketList.getSecondaryBucketFName();
+		bucketLists.remove(id);
+		readFiles.remove(id);
+		writeFiles.remove(id);
+		readResults.remove(id);
 	}
 
 	@Override
