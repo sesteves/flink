@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -280,5 +281,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	public List<V> getPrimaryBucket() {
 		return primaryBucket;
+	}
+
+	public Lock getPrimaryBucketLock() {
+		return primaryBucketLock;
 	}
 }

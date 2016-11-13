@@ -66,7 +66,7 @@ public class MemFsListState<K, N, V>
 	// TODO clean elements
 	private Map<String, Queue<String>> readResults = new ConcurrentHashMap<>();
 
-	private Map<String, List<V>> primaryBuckets = new ConcurrentHashMap<>();
+	private Map<String, BucketList<V>> bucketLists = new ConcurrentHashMap<>();
 
 	private Thread ioThread = new Thread() {
 		@Override
@@ -108,7 +108,11 @@ public class MemFsListState<K, N, V>
 
 						String value;
 						if("".equals(element.getValue())) {
-							value = serializer.serialize(primaryBuckets.get(element.getFName()).remove(0));
+							BucketList<V> bucketList = bucketLists.get(element.getFName());
+							bucketList.getPrimaryBucketLock().lock();
+							List<V> primaryBucket = bucketList.getPrimaryBucket();
+							value = serializer.serialize(primaryBucket.remove(0));
+							bucketList.getPrimaryBucketLock().unlock();
 						} else {
 							value = element.getValue();
 						}
@@ -163,7 +167,7 @@ public class MemFsListState<K, N, V>
 		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
 		if (bucketList == null) {
 			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, readResults);
-			primaryBuckets.put(bucketList.getSecondaryBucketFName(), bucketList.getPrimaryBucket());
+			bucketLists.put(bucketList.getSecondaryBucketFName(), bucketList);
 			currentNSState.put(currentKey, bucketList);
 		}
 
