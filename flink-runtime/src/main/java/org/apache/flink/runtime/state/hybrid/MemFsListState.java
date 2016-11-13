@@ -71,6 +71,7 @@ public class MemFsListState<K, N, V>
 	private Map<String, BufferedReader> readFiles = new HashMap<>();
 	private Map<String, PrintWriter> writeFiles = new HashMap<>();
 
+	private Queue<String> flushes = new ConcurrentLinkedQueue<>();
 
 	private Thread ioThread = new Thread() {
 		@Override
@@ -80,7 +81,13 @@ public class MemFsListState<K, N, V>
 				QueueElement element;
 				while (true) {
 
-					if (!readQueue.isEmpty()) {
+					if(!flushes.isEmpty()) {
+						String id = flushes.poll();
+						if(writeFiles.containsKey(id)) {
+							writeFiles.get(id).flush();
+						}
+
+					} else if (!readQueue.isEmpty()) {
 						element = readQueue.poll();
 
 						BufferedReader br = readFiles.get(element.getFName());
@@ -105,7 +112,7 @@ public class MemFsListState<K, N, V>
 						PrintWriter pw = writeFiles.get(element.getFName());
 						if (pw == null) {
 							System.out.println("creating file " + element.getFName());
-							pw = new PrintWriter(new FileWriter(element.getFName()), true);
+							pw = new PrintWriter(element.getFName());
 							writeFiles.put(element.getFName(), pw);
 						}
 
@@ -154,8 +161,14 @@ public class MemFsListState<K, N, V>
 		if (currentNSState == null) {
 			currentNSState = state.get(currentNamespace);
 		}
-		return currentNSState != null ?
-			currentNSState.get(currentKey) : null;
+
+		if(currentNSState != null) {
+			BucketList<V> result = (BucketList<V>) currentNSState.get(currentKey);
+			// flush
+			flushes.add(result.getSecondaryBucketFName());
+			return result;
+		}
+		return null;
 	}
 
 	@Override
