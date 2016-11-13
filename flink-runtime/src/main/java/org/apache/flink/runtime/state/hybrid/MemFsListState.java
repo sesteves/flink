@@ -111,13 +111,15 @@ public class MemFsListState<K, N, V>
 
 						if("".equals(element.getValue())) {
 							BucketList<V> bucketList = bucketLists.get(element.getFName());
-							bucketList.getPrimaryBucketLock().lock();
-							List<V> primaryBucket = bucketList.getPrimaryBucket();
-							if(!primaryBucket.isEmpty()) {
-								String value = serializer.serialize(primaryBucket.remove(0));
-								pw.println(value);
+							if(bucketList != null) {
+								bucketList.getPrimaryBucketLock().lock();
+								List<V> primaryBucket = bucketList.getPrimaryBucket();
+								if (!primaryBucket.isEmpty()) {
+									String value = serializer.serialize(primaryBucket.remove(0));
+									pw.println(value);
+								}
+								bucketList.getPrimaryBucketLock().unlock();
 							}
-							bucketList.getPrimaryBucketLock().unlock();
 						} else {
 							pw.println(element.getValue());
 						}
