@@ -229,6 +229,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			while(readResults.isEmpty()) {
 				if(System.currentTimeMillis() - startTick > 2000) {
 					System.out.println("taking to long to obtain results...");
+					startTick = System.currentTimeMillis();
 				}
 			}
 			String value = readResults.poll();
