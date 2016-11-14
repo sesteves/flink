@@ -31,6 +31,7 @@ import org.apache.flink.runtime.state.memory.MemoryStateBackend;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -111,18 +112,22 @@ public class MemFsListState<K, N, V>
 						PrintWriter pw = writeFiles.get(element.getFName());
 						if (pw == null) {
 							System.out.println("creating file " + element.getFName());
-							pw = new PrintWriter(element.getFName());
+							pw = new PrintWriter(new FileWriter(element.getFName()), true);
 							writeFiles.put(element.getFName(), pw);
 						}
 
-						if("".equals(element.getValue())) {
+						if ("".equals(element.getValue())) {
 							BucketList<V> bucketList = bucketLists.get(element.getFName());
-							if(bucketList != null) {
+							if (bucketList != null) {
 								bucketList.getPrimaryBucketLock().lock();
 								List<V> primaryBucket = bucketList.getPrimaryBucket();
 								if (!primaryBucket.isEmpty()) {
-									String value = serializer.serialize(primaryBucket.remove(0));
-									pw.println(value);
+									StringBuilder sb = new StringBuilder();
+									for(int i = 0; i < element.getBlockSize(); i++) {
+										sb.append(serializer.serialize(primaryBucket.remove(0)));
+										sb.append('\n');
+									}
+									pw.print(sb.toString());
 								}
 								bucketList.getPrimaryBucketLock().unlock();
 							}

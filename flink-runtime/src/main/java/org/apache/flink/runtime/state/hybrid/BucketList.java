@@ -129,7 +129,12 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
 						primaryBucketLock.lock();
 						System.out.println("spilling...");
-						for(int i = 0; i < primaryBucket.size() -  primaryBucketAfterFlushSize; i++) {
+
+						long blockSize = 10000;
+						long excess = primaryBucketSize - primaryBucketAfterFlushSize;
+						long blocks = excess / blockSize;
+
+						for(int i = 0; i < blocks; i++) {
 						// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
 
 							if (first) {
@@ -137,7 +142,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 								line = firstLine;
 								first = false;
 							} else {
-								writeQueue.add(new QueueElement(secondaryBucketFName, ""));
+								writeQueue.add(new QueueElement(secondaryBucketFName, blockSize));
 								//secondaryBucket.println(json);
 							}
 
@@ -151,11 +156,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 							if (abortSpilling) {
 								// TODO flush string builder
 								System.out.println("spilling aborted...");
-
-								writeQueue.clear();
 								break;
 							}
 						}
+						if(excess % blockSize != 0) {
+							writeQueue.add(new QueueElement(secondaryBucketFName, excess % blockSize));
+						}
+
 						primaryBucketLock.unlock();
 
 						// System.out.println("After Primary Bucket Size: " + primaryBucket.size());
