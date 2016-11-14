@@ -163,7 +163,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 								// String json = serializer.serialize(value);
 
 							}
-							if (excess % blockSize != 0) {
+							if (!abortSpilling && excess % blockSize != 0) {
 								writeQueue.add(new QueueElement(secondaryBucketFName, excess % blockSize));
 							}
 						} else {
