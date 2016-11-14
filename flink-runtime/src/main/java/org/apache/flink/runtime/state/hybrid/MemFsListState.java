@@ -122,6 +122,7 @@ public class MemFsListState<K, N, V>
 								bucketList.getPrimaryBucketLock().lock();
 								List<V> primaryBucket = bucketList.getPrimaryBucket();
 								if (!primaryBucket.isEmpty()) {
+									System.out.println("primarybucketSize: " + primaryBucket.size() + ", blocksize: " + element.getBlockSize());
 									StringBuilder sb = new StringBuilder();
 									for(int i = 0; i < element.getBlockSize(); i++) {
 										sb.append(serializer.serialize(primaryBucket.remove(0)));

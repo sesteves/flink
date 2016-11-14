@@ -128,24 +128,24 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 					public void run() {
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
 						primaryBucketLock.lock();
-						System.out.println("spilling...");
 
 						long blockSize = 10000;
 						long excess = primaryBucket.size() - primaryBucketAfterFlushSize;
 						long blocks = excess / blockSize;
 
+						System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + (excess % blockSize));
+
+						if (first) {
+							firstLine = serializer.serialize(primaryBucket.remove(0));
+							line = firstLine;
+							first = false;
+						}
+
 						for(int i = 0; i < blocks; i++) {
-						// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
+							// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
 
-							if (first) {
-								firstLine = serializer.serialize(primaryBucket.remove(0));
-								line = firstLine;
-								first = false;
-							} else {
-								writeQueue.add(new QueueElement(secondaryBucketFName, blockSize));
-								//secondaryBucket.println(json);
-							}
-
+							writeQueue.add(new QueueElement(secondaryBucketFName, blockSize));
+							//secondaryBucket.println(json);
 
 							// add(primaryBucket.remove(0));
 
