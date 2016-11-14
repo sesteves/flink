@@ -107,6 +107,7 @@ public class MemFsListState<K, N, V>
 						while((value = br.readLine()) != null) {
 							results.add(value);
 						}
+						results.add("");
 
 					} else if (!writeQueue.isEmpty()) {
 						element = writeQueue.poll();

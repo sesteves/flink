@@ -123,52 +123,53 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				readingFromDisk = false;
 			}
 
-
-			if (!usePrimaryBucket && primaryBucket.size() > primaryBucketAfterFlushSize) {
+			if (!usePrimaryBucket) {
 
 				new Thread() {
 					@Override
 					public void run() {
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
 						primaryBucketLock.lock();
+						if(!abortSpilling && primaryBucket.size() > primaryBucketAfterFlushSize) {
 
-						long blockSize = 10000;
-						long excess = primaryBucket.size() - primaryBucketAfterFlushSize;
-						long blocks = excess / blockSize;
+							long blockSize = 10000;
+							long excess = primaryBucket.size() - primaryBucketAfterFlushSize;
+							long blocks = excess / blockSize;
 
-						System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + (excess % blockSize));
+							System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + (excess % blockSize));
 
-						if (first) {
-							firstLine = serializer.serialize(primaryBucket.remove(0));
-							line = firstLine;
-							first = false;
-						}
-
-						for(int i = 0; i < blocks; i++) {
-							// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
-
-							writeQueue.add(new QueueElement(secondaryBucketFName, blockSize));
-							//secondaryBucket.println(json);
-
-							// add(primaryBucket.remove(0));
-
-							// TODO make more efficient add
-							// String json = serializer.serialize(value);
-
-
-							if (abortSpilling) {
-								// TODO flush string builder
-								System.out.println("spilling aborted...");
-								break;
+							if (first) {
+								firstLine = serializer.serialize(primaryBucket.remove(0));
+								line = firstLine;
+								first = false;
 							}
-						}
-						if(excess % blockSize != 0) {
-							writeQueue.add(new QueueElement(secondaryBucketFName, excess % blockSize));
-						}
 
+							for (int i = 0; i < blocks; i++) {
+								// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
+
+								if (abortSpilling) {
+									// TODO flush string builder
+									System.out.println("spilling aborted...");
+									break;
+								}
+
+
+								writeQueue.add(new QueueElement(secondaryBucketFName, blockSize));
+								//secondaryBucket.println(json);
+
+								// add(primaryBucket.remove(0));
+
+								// TODO make more efficient add
+								// String json = serializer.serialize(value);
+
+							}
+							if (excess % blockSize != 0) {
+								writeQueue.add(new QueueElement(secondaryBucketFName, excess % blockSize));
+							}
+						} else {
+							System.out.println("spilling aborted...");
+						}
 						primaryBucketLock.unlock();
-
-						// System.out.println("After Primary Bucket Size: " + primaryBucket.size());
 
 					}
 				}.start();
@@ -223,23 +224,15 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 			result = (V) deserializer.deserialize(line);
 
-
-			if(readResults.isEmpty()) {
-				line = null;
-			} else {
-				line = readResults.poll();
-			}
-
-
 			// collect result
-//			long startTick = System.currentTimeMillis();
-//			while(readResults.isEmpty()) {
-//				if(System.currentTimeMillis() - startTick > 2000) {
-//					System.out.println("taking to long to obtain results...");
-//				}
-//			}
-//			String value = readResults.poll();
-//			line = "".equals(value) ? null : value;
+			long startTick = System.currentTimeMillis();
+			while(readResults.isEmpty()) {
+				if(System.currentTimeMillis() - startTick > 2000) {
+					System.out.println("taking to long to obtain results...");
+				}
+			}
+			String value = readResults.poll();
+			line = "".equals(value) ? null : value;
 
 		}
 
