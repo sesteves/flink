@@ -60,8 +60,7 @@ public class MemFsListState<K, N, V>
 
 	private BucketListShared bucketListShared = new BucketListShared();
 
-	private Queue<QueueElement> readQueue = new ConcurrentLinkedQueue<>(),
-		writeQueue = new ConcurrentLinkedQueue<>();
+	private Queue<QueueElement> readQueue = new ConcurrentLinkedQueue<>(), writeQueue = new ConcurrentLinkedQueue<>();
 
 	// TODO clean elements
 	private Map<String, Queue<String>> readResults = new ConcurrentHashMap<>();
@@ -81,13 +80,14 @@ public class MemFsListState<K, N, V>
 				QueueElement element;
 				while (true) {
 
-					if(!flushes.isEmpty()) {
-						String id = flushes.poll();
-						if(writeFiles.containsKey(id)) {
-							writeFiles.get(id).flush();
-						}
-
-					} else if (!readQueue.isEmpty()) {
+//					if(!flushes.isEmpty()) {
+//						String id = flushes.poll();
+//						if(writeFiles.containsKey(id)) {
+//							writeFiles.get(id).flush();
+//						}
+//
+//					} else
+					if (!readQueue.isEmpty()) {
 						element = readQueue.poll();
 
 						BufferedReader br = readFiles.get(element.getFName());
@@ -103,8 +103,10 @@ public class MemFsListState<K, N, V>
 //							readResults.put(element.getFName(), results);
 //						}
 
-						String value = br.readLine();
-						results.add(value == null ? "" : value);
+						String value;
+						while((value = br.readLine()) != null) {
+							results.add(value);
+						}
 
 					} else if (!writeQueue.isEmpty()) {
 						element = writeQueue.poll();
@@ -170,7 +172,7 @@ public class MemFsListState<K, N, V>
 		if(currentNSState != null) {
 			BucketList<V> result = (BucketList<V>) currentNSState.get(currentKey);
 			// flush
-			flushes.add(result.getSecondaryBucketFName());
+			// flushes.add(result.getSecondaryBucketFName());
 			return result;
 		}
 		return null;

@@ -79,6 +79,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private Queue<String> readResults = new ConcurrentLinkedQueue<>();
 
+	private boolean readRequested = false;
+
 	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue, Queue<QueueElement> writeQueue, Map<String, Queue<String>> readResults) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
@@ -114,6 +116,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			primaryBucketIndex = 0;
 			abortSpilling = false;
 			flush = true;
+			readRequested = false;
 
 			if (readingFromDisk) {
 				bucketListShared.setFinalProcessing(false);
@@ -189,6 +192,12 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	public V next() {
 		V result = null;
 
+		if(!readRequested) {
+			readQueue.add(new QueueElement(secondaryBucketFName, null));
+			readRequested = true;
+		}
+
+
 //		if (flush) {
 //			flush = false;
 //			new Thread() {
@@ -213,25 +222,25 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			bucketListShared.setFinalProcessing(true);
 
 			result = (V) deserializer.deserialize(line);
-//			try {
-			// add request
-			readQueue.add(new QueueElement(secondaryBucketFName, null));
+
+
+			if(readResults.isEmpty()) {
+				line = null;
+			} else {
+				line = readResults.poll();
+			}
+
 
 			// collect result
-			long startTick = System.currentTimeMillis();
-			while(readResults.isEmpty()) {
-				if(System.currentTimeMillis() - startTick > 2000) {
-					System.out.println("taking to long to obtain results...");
-				}
-			}
-			String value = readResults.poll();
-			line = "".equals(value) ? null : value;
+//			long startTick = System.currentTimeMillis();
+//			while(readResults.isEmpty()) {
+//				if(System.currentTimeMillis() - startTick > 2000) {
+//					System.out.println("taking to long to obtain results...");
+//				}
+//			}
+//			String value = readResults.poll();
+//			line = "".equals(value) ? null : value;
 
-			// line = br.readLine();
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//			}
 		}
 
 		return result;
