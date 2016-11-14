@@ -131,7 +131,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 						System.out.println("spilling...");
 
 						long blockSize = 10000;
-						long excess = primaryBucketSize - primaryBucketAfterFlushSize;
+						long excess = primaryBucket.size() - primaryBucketAfterFlushSize;
 						long blocks = excess / blockSize;
 
 						for(int i = 0; i < blocks; i++) {
