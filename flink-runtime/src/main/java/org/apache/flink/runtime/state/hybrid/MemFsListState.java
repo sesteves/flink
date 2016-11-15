@@ -60,9 +60,9 @@ public class MemFsListState<K, N, V>
 
 	private BucketListShared bucketListShared = new BucketListShared();
 
-	private Queue<QueueElement> readQueue = new ConcurrentLinkedQueue<>(), writeQueue = new ConcurrentLinkedQueue<>();
+	private Queue<QueueElement> readQueue = new ConcurrentLinkedQueue<>(), writeQueue = new ConcurrentLinkedQueue<>(),
+		spillQueue = new ConcurrentLinkedQueue<>();
 
-	// TODO clean elements
 	private Map<String, Queue<String>> readResults = new ConcurrentHashMap<>();
 
 	private Map<String, BucketList<V>> bucketLists = new ConcurrentHashMap<>();
@@ -118,29 +118,36 @@ public class MemFsListState<K, N, V>
 							writeFiles.put(element.getFName(), pw);
 						}
 
-						if ("".equals(element.getValue())) {
-							BucketList<V> bucketList = bucketLists.get(element.getFName());
-							if (bucketList != null) {
+						pw.println(element.getValue());
+					} else if (!spillQueue.isEmpty()){
 
-								bucketList.getPrimaryBucketLock().lock();
-								List<V> primaryBucket = bucketList.getPrimaryBucket();
-								if (!primaryBucket.isEmpty()) {
-									System.out.println("primarybucketSize: " + primaryBucket.size() + ", blocksize: " + element.getBlockSize());
-									StringBuilder sb = new StringBuilder();
-									for(int i = 0; i < element.getBlockSize(); i++) {
-										sb.append(serializer.serialize(primaryBucket.remove(0)));
-										sb.append('\n');
-									}
-									pw.print(sb.toString());
-								}
-								bucketList.getPrimaryBucketLock().unlock();
-							}
-						} else {
-							pw.println(element.getValue());
+						element = spillQueue.poll();
+
+						PrintWriter pw = writeFiles.get(element.getFName());
+						if (pw == null) {
+							System.out.println("creating file " + element.getFName());
+							pw = new PrintWriter(new FileWriter(element.getFName()));
+							writeFiles.put(element.getFName(), pw);
 						}
 
+						BucketList<V> bucketList = bucketLists.get(element.getFName());
+						if (bucketList != null) {
+
+							bucketList.getPrimaryBucketLock().lock();
+							List<V> primaryBucket = bucketList.getPrimaryBucket();
+							if (!primaryBucket.isEmpty()) {
+								System.out.println("primarybucketSize: " + primaryBucket.size() + ", blocksize: " + element.getBlockSize());
+								StringBuilder sb = new StringBuilder();
+								for (int i = 0; i < element.getBlockSize(); i++) {
+									sb.append(serializer.serialize(primaryBucket.remove(0)));
+									sb.append('\n');
+								}
+								pw.print(sb.toString());
+							}
+							bucketList.getPrimaryBucketLock().unlock();
+						}
 					} else {
-						Thread.sleep(1);
+						Thread.sleep(0);
 					}
 
 				}
@@ -193,7 +200,7 @@ public class MemFsListState<K, N, V>
 
 		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
 		if (bucketList == null) {
-			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, readResults);
+			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, spillQueue, readResults);
 			bucketLists.put(bucketList.getSecondaryBucketFName(), bucketList);
 			currentNSState.put(currentKey, bucketList);
 		}

@@ -75,13 +75,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private boolean flush = true;
 
-	private Queue<QueueElement> readQueue, writeQueue;
+	private Queue<QueueElement> readQueue, writeQueue, spillQueue;
 
 	private Queue<String> readResults = new ConcurrentLinkedQueue<>();
 
 	private boolean readRequested = false;
 
-	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue, Queue<QueueElement> writeQueue, Map<String, Queue<String>> readResults) {
+	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue, Queue<QueueElement> writeQueue, Queue<QueueElement> spillQueue, Map<String, Queue<String>> readResults) {
 		primaryBucket = new ArrayList<>(primaryBucketSize);
 		this.primaryBucketSize = primaryBucketSize;
 		primaryBucketAfterFlushSize = Math.round(PRIMARY_BUCKET_AFTER_FLUSH_FACTOR * primaryBucketSize);
@@ -90,6 +90,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 		this.readQueue = readQueue;
 		this.writeQueue = writeQueue;
+		this.spillQueue = spillQueue;
 		readResults.put(secondaryBucketFName, this.readResults);
 
 //		buffer = new ArrayList<>(primaryBucketSize);
@@ -154,7 +155,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 								}
 
 
-								writeQueue.add(new QueueElement(secondaryBucketFName, blockSize));
+								spillQueue.add(new QueueElement(secondaryBucketFName, blockSize));
 								//secondaryBucket.println(json);
 
 								// add(primaryBucket.remove(0));
@@ -164,7 +165,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 							}
 							if (!abortSpilling && excess % blockSize != 0) {
-								writeQueue.add(new QueueElement(secondaryBucketFName, excess % blockSize));
+								spillQueue.add(new QueueElement(secondaryBucketFName, excess % blockSize));
 							}
 						} else {
 							System.out.println("spilling aborted...");
