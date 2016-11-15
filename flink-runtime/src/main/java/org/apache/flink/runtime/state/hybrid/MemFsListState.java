@@ -80,14 +80,13 @@ public class MemFsListState<K, N, V>
 				QueueElement element;
 				while (true) {
 
-//					if(!flushes.isEmpty()) {
-//						String id = flushes.poll();
-//						if(writeFiles.containsKey(id)) {
-//							writeFiles.get(id).flush();
-//						}
-//
-//					} else
-					if (!readQueue.isEmpty()) {
+					if(!flushes.isEmpty()) {
+						String id = flushes.poll();
+						if(writeFiles.containsKey(id)) {
+							writeFiles.get(id).flush();
+						}
+
+					} else if (!readQueue.isEmpty()) {
 						element = readQueue.poll();
 
 						BufferedReader br = readFiles.get(element.getFName());
@@ -115,13 +114,14 @@ public class MemFsListState<K, N, V>
 						PrintWriter pw = writeFiles.get(element.getFName());
 						if (pw == null) {
 							System.out.println("creating file " + element.getFName());
-							pw = new PrintWriter(new FileWriter(element.getFName()), true);
+							pw = new PrintWriter(new FileWriter(element.getFName()));
 							writeFiles.put(element.getFName(), pw);
 						}
 
 						if ("".equals(element.getValue())) {
 							BucketList<V> bucketList = bucketLists.get(element.getFName());
 							if (bucketList != null) {
+
 								bucketList.getPrimaryBucketLock().lock();
 								List<V> primaryBucket = bucketList.getPrimaryBucket();
 								if (!primaryBucket.isEmpty()) {
@@ -173,7 +173,7 @@ public class MemFsListState<K, N, V>
 		if(currentNSState != null) {
 			BucketList<V> result = (BucketList<V>) currentNSState.get(currentKey);
 			// flush
-			// flushes.add(result.getSecondaryBucketFName());
+			flushes.add(result.getSecondaryBucketFName());
 			return result;
 		}
 		return null;

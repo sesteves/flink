@@ -132,17 +132,17 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 						primaryBucketLock.lock();
 						if(!abortSpilling && primaryBucket.size() > primaryBucketAfterFlushSize) {
 
-							long blockSize = 10000;
-							long excess = primaryBucket.size() - primaryBucketAfterFlushSize;
-							long blocks = excess / blockSize;
-
-							System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + (excess % blockSize));
-
 							if (first) {
 								firstLine = serializer.serialize(primaryBucket.remove(0));
 								line = firstLine;
 								first = false;
 							}
+
+							long blockSize = 10000;
+							long excess = primaryBucket.size() - primaryBucketAfterFlushSize;
+							long blocks = excess / blockSize;
+
+							System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + (excess % blockSize));
 
 							for (int i = 0; i < blocks; i++) {
 								// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
@@ -193,7 +193,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	public V next() {
 		V result = null;
 
-		if(!readRequested) {
+		if(line != null && !readRequested) {
 			readQueue.add(new QueueElement(secondaryBucketFName, null));
 			readRequested = true;
 		}
