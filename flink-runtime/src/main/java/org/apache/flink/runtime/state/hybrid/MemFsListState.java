@@ -296,6 +296,8 @@ public class MemFsListState<K, N, V>
 
 						pw.print(sb.toString());
 
+						System.out.println("spilled block.. pBucket size: " + primaryBucket.size());
+
 					}
 				} catch(InterruptedException e) {
 					e.printStackTrace();
