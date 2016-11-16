@@ -58,7 +58,7 @@ public class MemFsListState<K, N, V>
 	extends AbstractMemState<K, N, ArrayList<V>, ListState<V>, ListStateDescriptor<V>>
 	implements ListState<V> {
 
-	private static final int N_THREADS = 8;
+	private static final int N_THREADS = 4;
 
 	private int maxTuplesInMemory;
 
@@ -182,6 +182,7 @@ public class MemFsListState<K, N, V>
 
 		if(currentNSState != null) {
 			BucketList<V> result = (BucketList<V>) currentNSState.get(currentKey);
+			System.out.println("get called... Flushing respective file!");
 			// flush
 			flushes.add(result.getSecondaryBucketFName());
 			return result;
