@@ -42,6 +42,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 
 /**
  * Heap-backed partitioned {@link org.apache.flink.api.common.state.ListState} that is snapshotted
@@ -54,6 +57,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class MemFsListState<K, N, V>
 	extends AbstractMemState<K, N, ArrayList<V>, ListState<V>, ListStateDescriptor<V>>
 	implements ListState<V> {
+
+	private static final int N_THREADS = 8;
 
 	private int maxTuplesInMemory;
 
@@ -73,12 +78,17 @@ public class MemFsListState<K, N, V>
 
 	private Queue<String> flushes = new ConcurrentLinkedQueue<>();
 
+	private final Semaphore semaphoreStart = new Semaphore(N_THREADS);
+
+	private final Semaphore semaphoreEnd = new Semaphore(N_THREADS);
+
 	private Thread ioThread = new Thread() {
 		@Override
 		public void run() {
 
 			try {
 				QueueElement element;
+
 				while (true) {
 
 					if(!flushes.isEmpty()) {
@@ -128,32 +138,9 @@ public class MemFsListState<K, N, V>
 
 						pw.println(element.getValue());
 					} else if (!spillQueue.isEmpty()){
+						semaphoreStart.release(N_THREADS);
+						semaphoreEnd.acquire(N_THREADS);
 
-						element = spillQueue.poll();
-
-						PrintWriter pw = writeFiles.get(element.getFName());
-						if (pw == null) {
-							System.out.println("creating file " + element.getFName());
-							pw = new PrintWriter(new FileWriter(element.getFName()));
-							writeFiles.put(element.getFName(), pw);
-						}
-
-						BucketList<V> bucketList = bucketLists.get(element.getFName());
-						if (bucketList != null) {
-
-							bucketList.getPrimaryBucketLock().lock();
-							List<V> primaryBucket = bucketList.getPrimaryBucket();
-							if (!primaryBucket.isEmpty()) {
-								System.out.println("primarybucketSize: " + primaryBucket.size() + ", blocksize: " + element.getBlockSize());
-								StringBuilder sb = new StringBuilder();
-								for (int i = 0; i < element.getBlockSize(); i++) {
-									sb.append(serializer.serialize(primaryBucket.remove(0)));
-									sb.append('\n');
-								}
-								pw.print(sb.toString());
-							}
-							bucketList.getPrimaryBucketLock().unlock();
-						}
 					} else {
 						Thread.sleep(0);
 					}
@@ -172,6 +159,14 @@ public class MemFsListState<K, N, V>
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, int maxTuplesInMemory) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc);
 		this.maxTuplesInMemory = maxTuplesInMemory;
+
+		semaphoreStart.tryAcquire(N_THREADS);
+		semaphoreEnd.tryAcquire(N_THREADS);
+
+		ExecutorService executor = Executors.newFixedThreadPool(N_THREADS);
+		for(int i = 0; i < N_THREADS; i++) {
+			executor.execute(new SpillThread());
+		}
 		ioThread.start();
 	}
 
@@ -250,6 +245,65 @@ public class MemFsListState<K, N, V>
 		@Override
 		public KvState<K, N, ListState<V>, ListStateDescriptor<V>, MemoryStateBackend> createMemState(HashMap<N, Map<K, ArrayList<V>>> stateMap) {
 			return new MemFsListState<>(keySerializer, namespaceSerializer, stateDesc, stateMap);
+		}
+	}
+
+
+	private class SpillThread implements Runnable {
+		@Override
+		public void run() {
+			while (true) {
+
+				try {
+					semaphoreStart.acquire();
+
+					QueueElement element = spillQueue.poll();
+					if (element == null) {
+						continue;
+					}
+
+					PrintWriter pw;
+					synchronized (this) {
+						pw = writeFiles.get(element.getFName());
+						if (pw == null) {
+							System.out.println("creating file " + element.getFName());
+							try {
+								pw = new PrintWriter(new FileWriter(element.getFName()));
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+							writeFiles.put(element.getFName(), pw);
+						}
+					}
+
+					BucketList<V> bucketList = bucketLists.get(element.getFName());
+					if (bucketList != null) {
+
+						BlockList<V> primaryBucket = bucketList.getPrimaryBucket();
+
+						List<V> block;
+						if (element.getBlockSize() == BucketList.BLOCK_SIZE) {
+							block = primaryBucket.removeBlock();
+						} else {
+							block = primaryBucket.removeLastBlock();
+						}
+
+						StringBuilder sb = new StringBuilder();
+						for (int i = 0; i < element.getBlockSize(); i++) {
+							sb.append(serializer.serialize(block.remove(0)));
+							sb.append('\n');
+						}
+
+						pw.print(sb.toString());
+
+					}
+				} catch(InterruptedException e) {
+					e.printStackTrace();
+				} finally {
+					semaphoreEnd.release();
+				}
+
+			}
 		}
 	}
 }

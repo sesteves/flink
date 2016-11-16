@@ -18,8 +18,84 @@
 
 package org.apache.flink.runtime.state.hybrid;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  *
  */
-public class BlockList {
+public class BlockList<T> {
+
+	private List<List<T>> blockList;
+
+	private int blockSize;
+
+	private int size = 0;
+
+	public BlockList(int capacity, int blockSize) {
+		this.blockSize = blockSize;
+
+		int blocks = capacity / blockSize;
+		int remaining = capacity % blockSize;
+
+		blockList = Collections.synchronizedList(new ArrayList<List<T>>(blocks + (remaining == 0? 0 : 1)));
+
+		for(int i = 0; i < blocks; i++) {
+			blockList.add(Collections.synchronizedList(new ArrayList<T>(blockSize)));
+		}
+		if(remaining != 0) {
+			blockList.add(Collections.synchronizedList(new ArrayList<T>(remaining)));
+		}
+	}
+
+	public void add(T object) {
+		int lastBlock = size / blockSize;
+		blockList.get(lastBlock).add(object);
+		size++;
+	}
+
+	public T get(int index) {
+		int block = index / blockSize;
+		int remaining = index % blockSize;
+
+		return blockList.get(block).get(remaining);
+	}
+
+	public synchronized List<T> removeBlock() {
+		List<T> list = blockList.remove(0);
+		size -= list.size();
+		return list;
+	}
+
+	public synchronized List<T> removeLastBlock() {
+		int lastBlock = size / blockSize;
+		if(size % blockSize == 0) {
+			lastBlock--;
+		}
+		List<T> list = blockList.remove(lastBlock);
+		size -= list.size();
+		return list;
+	}
+
+	public T removeLast() {
+		int lastBlock = size / blockSize;
+		if(size % blockSize == 0) {
+			lastBlock--;
+		}
+		size--;
+		return blockList.get(lastBlock).remove(0);
+	}
+
+	public int size() {
+		return size;
+	}
+
+	public void clear() {
+		blockList.clear();
+	}
+
+	public boolean isEmpty() {
+		return size == 0;
+	}
 }

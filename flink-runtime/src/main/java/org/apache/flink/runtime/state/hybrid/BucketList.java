@@ -39,7 +39,10 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private static final double PRIMARY_BUCKET_AFTER_FLUSH_FACTOR = 0.1;
 
-	private List<V> primaryBucket;
+	public static final int BLOCK_SIZE = 10000;
+
+	// private List<V> primaryBucket;
+	private BlockList<V> primaryBucket;
 
 	private long primaryBucketSize;
 
@@ -82,7 +85,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	private boolean readRequested = false;
 
 	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue, Queue<QueueElement> writeQueue, Queue<QueueElement> spillQueue, Map<String, Queue<String>> readResults) {
-		primaryBucket = new ArrayList<>(primaryBucketSize);
+//		primaryBucket = new ArrayList<>(primaryBucketSize);
+		primaryBucket = new BlockList<>(primaryBucketSize, BLOCK_SIZE);
+
 		this.primaryBucketSize = primaryBucketSize;
 		primaryBucketAfterFlushSize = Math.round(PRIMARY_BUCKET_AFTER_FLUSH_FACTOR * primaryBucketSize);
 
@@ -134,16 +139,16 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 						if(!abortSpilling && primaryBucket.size() > primaryBucketAfterFlushSize) {
 
 							if (first) {
-								firstLine = serializer.serialize(primaryBucket.remove(0));
+								firstLine = serializer.serialize(primaryBucket.removeLast());
 								line = firstLine;
 								first = false;
 							}
 
-							long blockSize = 10000;
 							long excess = primaryBucket.size() - primaryBucketAfterFlushSize;
-							long blocks = excess / blockSize;
+							long blocks = excess / BLOCK_SIZE;
+							long remaining = excess % BLOCK_SIZE;
 
-							System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + (excess % blockSize));
+							System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + remaining);
 
 							for (int i = 0; i < blocks; i++) {
 								// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
@@ -155,7 +160,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 								}
 
 
-								spillQueue.add(new QueueElement(secondaryBucketFName, blockSize));
+								spillQueue.add(new QueueElement(secondaryBucketFName, BLOCK_SIZE));
 								//secondaryBucket.println(json);
 
 								// add(primaryBucket.remove(0));
@@ -164,8 +169,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 								// String json = serializer.serialize(value);
 
 							}
-							if (!abortSpilling && excess % blockSize != 0) {
-								spillQueue.add(new QueueElement(secondaryBucketFName, excess % blockSize));
+							if (!abortSpilling && remaining != 0) {
+								spillQueue.add(new QueueElement(secondaryBucketFName, remaining));
 							}
 						} else {
 							System.out.println("spilling aborted...");
@@ -286,7 +291,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		return secondaryBucketFName;
 	}
 
-	public List<V> getPrimaryBucket() {
+	public BlockList<V> getPrimaryBucket() {
 		return primaryBucket;
 	}
 
