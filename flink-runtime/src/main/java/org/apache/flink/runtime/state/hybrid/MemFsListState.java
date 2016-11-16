@@ -182,7 +182,7 @@ public class MemFsListState<K, N, V>
 
 		if(currentNSState != null) {
 			BucketList<V> result = (BucketList<V>) currentNSState.get(currentKey);
-			System.out.println("get called... Flushing respective file!");
+			System.out.println("get called... Flushing file: " + result.getSecondaryBucketFName());
 			// flush
 			flushes.add(result.getSecondaryBucketFName());
 			return result;
