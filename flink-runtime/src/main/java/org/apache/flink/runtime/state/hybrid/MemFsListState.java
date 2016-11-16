@@ -115,10 +115,9 @@ public class MemFsListState<K, N, V>
 							readFiles.put(element.getFName(), br);
 						}
 
-//						if (results == null) {
-//							results = new ConcurrentLinkedQueue<>();
-//							readResults.put(element.getFName(), results);
-//						}
+						// this flush is necessary for when there is a single past window and a spill does not
+						// does not fit in 1 window duration
+						writeFiles.get(element.getFName()).flush();
 
 						String value;
 						while((value = br.readLine()) != null) {
