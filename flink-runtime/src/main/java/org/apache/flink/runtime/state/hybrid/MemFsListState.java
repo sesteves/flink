@@ -30,6 +30,7 @@ import org.apache.flink.runtime.state.memory.AbstractMemStateSnapshot;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -89,14 +90,21 @@ public class MemFsListState<K, N, V>
 					} else if (!readQueue.isEmpty()) {
 						element = readQueue.poll();
 
+						Queue<String> results = readResults.get(element.getFName());
+
 						BufferedReader br = readFiles.get(element.getFName());
 						if(br == null) {
 							System.out.println("opening file " + element.getFName());
-							br = new BufferedReader(new FileReader(element.getFName()));
+							File f = new File(element.getFName());
+							if(!f.exists()) {
+								System.out.println("File does not exist: " + element.getFName());
+								results.add("");
+								continue;
+							}
+							br = new BufferedReader(new FileReader(f));
 							readFiles.put(element.getFName(), br);
 						}
 
-						Queue<String> results = readResults.get(element.getFName());
 //						if (results == null) {
 //							results = new ConcurrentLinkedQueue<>();
 //							readResults.put(element.getFName(), results);
