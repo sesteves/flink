@@ -248,6 +248,9 @@ public class MemFsListState<K, N, V>
 		}
 	}
 
+	private Object getInstance() {
+		return this;
+	}
 
 	private class SpillThread implements Runnable {
 		@Override
@@ -263,7 +266,7 @@ public class MemFsListState<K, N, V>
 					}
 
 					PrintWriter pw;
-					synchronized (this) {
+					synchronized (getInstance()) {
 						pw = writeFiles.get(element.getFName());
 						if (pw == null) {
 							System.out.println("creating file " + element.getFName());
