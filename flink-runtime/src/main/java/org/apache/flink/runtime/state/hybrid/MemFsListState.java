@@ -95,8 +95,9 @@ public class MemFsListState<K, N, V>
 
 					if(!flushes.isEmpty()) {
 						String id = flushes.poll();
-						if(writeFiles.containsKey(id)) {
-							writeFiles.get(id).flush();
+						PrintWriter pw = writeFiles.get(id);
+						if(pw != null) {
+							pw.flush();
 						}
 
 					} else if (!readQueue.isEmpty()) {
