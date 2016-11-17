@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.state.hybrid;
 
+import flexjson.JSONDeserializer;
 import flexjson.JSONSerializer;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
@@ -28,6 +29,7 @@ import org.apache.flink.runtime.state.KvStateSnapshot;
 import org.apache.flink.runtime.state.memory.AbstractMemState;
 import org.apache.flink.runtime.state.memory.AbstractMemStateSnapshot;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
+import scala.Tuple2;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -64,12 +66,12 @@ public class MemFsListState<K, N, V>
 
 	private JSONSerializer serializer = new JSONSerializer();
 
+	private JSONDeserializer deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory());
+
 	private BucketListShared bucketListShared = new BucketListShared();
 
 	private Queue<QueueElement> readQueue = new ConcurrentLinkedQueue<>(), writeQueue = new ConcurrentLinkedQueue<>(),
 		spillQueue = new ConcurrentLinkedQueue<>();
-
-	private Map<String, Queue<String>> readResults = new ConcurrentHashMap<>();
 
 	private Map<String, BucketList<V>> bucketLists = new ConcurrentHashMap<>();
 
@@ -100,15 +102,21 @@ public class MemFsListState<K, N, V>
 					} else if (!readQueue.isEmpty()) {
 						element = readQueue.poll();
 
-						Queue<String> results = readResults.get(element.getFName());
+						// read remaining elements that were not written to disk
+						BucketList<V> bucketList = bucketLists.get(element.getFName());
+						Queue<V> writeBuffer = bucketList.getWriteBuffer();
+						Queue<V> results = bucketList.getReadResultsBuffer();
+						while(!writeBuffer.isEmpty()) {
+							results.add(writeBuffer.poll());
+						}
 
 						BufferedReader br = readFiles.get(element.getFName());
-						if(br == null) {
+						if (br == null) {
 							System.out.println("opening file " + element.getFName());
 							File f = new File(element.getFName());
 							if(!f.exists()) {
 								System.out.println("File does not exist: " + element.getFName());
-								results.add("");
+								bucketList.markEOF();
 								continue;
 							}
 							br = new BufferedReader(new FileReader(f));
@@ -120,22 +128,30 @@ public class MemFsListState<K, N, V>
 						writeFiles.get(element.getFName()).flush();
 
 						String value;
-						while((value = br.readLine()) != null) {
-							results.add(value);
+						while ((value = br.readLine()) != null) {
+							results.add((V) deserializer.deserialize(value));
 						}
-						results.add("");
+						bucketList.markEOF();
 
 					} else if (!writeQueue.isEmpty()) {
 						element = writeQueue.poll();
+						if(bucketLists.containsKey(element.getFName())) {
+							Queue<V> writeBuffer = bucketLists.get(element.getFName()).getWriteBuffer();
 
-						PrintWriter pw = writeFiles.get(element.getFName());
-						if (pw == null) {
-							System.out.println("creating file " + element.getFName());
-							pw = new PrintWriter(new FileWriter(element.getFName()));
-							writeFiles.put(element.getFName(), pw);
+							if (!writeBuffer.isEmpty()) {
+
+								PrintWriter pw = writeFiles.get(element.getFName());
+								if (pw == null) {
+									System.out.println("creating file " + element.getFName());
+									pw = new PrintWriter(new FileWriter(element.getFName()));
+									writeFiles.put(element.getFName(), pw);
+								}
+
+								for(int i = 0; i < BucketList.BLOCK_SIZE && !writeBuffer.isEmpty(); i++) {
+									pw.println(writeBuffer.poll());
+								}
+							}
 						}
-
-						pw.println(element.getValue());
 					} else if (!spillQueue.isEmpty()){
 						semaphoreStart.release(N_THREADS);
 						semaphoreEnd.acquire(N_THREADS);
@@ -203,7 +219,7 @@ public class MemFsListState<K, N, V>
 
 		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
 		if (bucketList == null) {
-			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, spillQueue, readResults);
+			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, spillQueue);
 			bucketLists.put(bucketList.getSecondaryBucketFName(), bucketList);
 			currentNSState.put(currentKey, bucketList);
 		}
@@ -224,7 +240,6 @@ public class MemFsListState<K, N, V>
 		bucketLists.remove(id);
 		readFiles.remove(id);
 		writeFiles.remove(id);
-		readResults.remove(id);
 	}
 
 	@Override

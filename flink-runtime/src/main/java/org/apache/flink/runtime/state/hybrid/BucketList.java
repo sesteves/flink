@@ -18,13 +18,8 @@
 
 package org.apache.flink.runtime.state.hybrid;
 
-import flexjson.JSONDeserializer;
-import flexjson.JSONSerializer;
-import scala.Tuple2;
-
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -51,19 +46,15 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 //	private BufferedReader br;
 
-	private String line;
+	private V line;
 
-	private String firstLine;
+	private V firstLine;
 
 	private boolean first = true;
 
 	private String secondaryBucketFName = "state/state-" + UUID.randomUUID().toString();
 
 //	private PrintWriter secondaryBucket;
-
-	JSONSerializer serializer = new JSONSerializer();
-
-	private JSONDeserializer deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory());
 
 	private boolean usePrimaryBucket = true;
 
@@ -75,15 +66,17 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private boolean readingFromDisk = false;
 
-	private boolean flush = true;
-
 	private Queue<QueueElement> readQueue, writeQueue, spillQueue;
 
-	private Queue<String> readResults = new ConcurrentLinkedQueue<>();
+	private Queue<V> readResults = new ConcurrentLinkedQueue<>();
 
 	private boolean readRequested = false;
 
-	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue, Queue<QueueElement> writeQueue, Queue<QueueElement> spillQueue, Map<String, Queue<String>> readResults) {
+	private Queue<V> writeBuffer = new ConcurrentLinkedQueue<>();
+
+	private boolean eof = false;
+
+	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue, Queue<QueueElement> writeQueue, Queue<QueueElement> spillQueue) {
 //		primaryBucket = new ArrayList<>(primaryBucketSize);
 		primaryBucket = new BlockList<>(primaryBucketSize, BLOCK_SIZE);
 
@@ -95,7 +88,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		this.readQueue = readQueue;
 		this.writeQueue = writeQueue;
 		this.spillQueue = spillQueue;
-		readResults.put(secondaryBucketFName, this.readResults);
 
 //		buffer = new ArrayList<>(primaryBucketSize);
 
@@ -120,8 +112,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 			primaryBucketIndex = 0;
 			abortSpilling = false;
-			flush = true;
 			readRequested = false;
+			eof = false;
 
 			if (readingFromDisk) {
 				bucketListShared.setFinalProcessing(false);
@@ -138,7 +130,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 						if(!abortSpilling && primaryBucket.size() > primaryBucketAfterFlushSize) {
 
 							if (first) {
-								firstLine = serializer.serialize(primaryBucket.removeLast());
+								firstLine = primaryBucket.removeLast();
 								line = firstLine;
 								first = false;
 							}
@@ -199,20 +191,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		V result = null;
 
 		if(line != null && !readRequested) {
-			readQueue.add(new QueueElement(secondaryBucketFName, null));
+			readQueue.add(new QueueElement(secondaryBucketFName));
 			readRequested = true;
 		}
-
-
-//		if (flush) {
-//			flush = false;
-//			new Thread() {
-//				@Override
-//				public void run() {
-//					secondaryBucket.flush();
-//				}
-//			}.start();
-//		}
 
 		if (primaryBucketIndex < primaryBucket.size()) {
 			if (!usePrimaryBucket) {
@@ -227,19 +208,18 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			readingFromDisk = true;
 			bucketListShared.setFinalProcessing(true);
 
-			result = (V) deserializer.deserialize(line);
+			result = line;
 
 			// collect result
 			long startTick = System.currentTimeMillis();
-			while(readResults.isEmpty()) {
+			while(readResults.isEmpty() && !eof) {
 				if(System.currentTimeMillis() - startTick > 2000) {
 					System.out.println("taking to long to obtain results...");
 					startTick = System.currentTimeMillis();
 				}
 			}
-			String value = readResults.poll();
-			line = "".equals(value) ? null : value;
 
+			line = readResults.poll();
 		}
 
 		return result;
@@ -251,14 +231,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			(!usePrimaryBucket && primaryBucket.size() < primaryBucketAfterFlushSize)) {
 			primaryBucket.add(value);
 		} else {
-			String json = serializer.serialize(value);
 			if (first) {
-				firstLine = json;
+				firstLine = value;
 				line = firstLine;
 				first = false;
 			} else {
-				writeQueue.add(new QueueElement(secondaryBucketFName, json));
-				//secondaryBucket.println(json);
+				writeBuffer.add(value);
+				writeQueue.add(new QueueElement(secondaryBucketFName));
 			}
 		}
 		return true;
@@ -274,6 +253,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		primaryBucketLock.lock();
 		primaryBucket.clear();
 		primaryBucketLock.unlock();
+		writeBuffer.clear();
+		readResults.clear();
 		// usePrimaryBucket = true;
 	}
 
@@ -296,5 +277,17 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	public Lock getPrimaryBucketLock() {
 		return primaryBucketLock;
+	}
+
+	public Queue<V> getWriteBuffer() {
+		return writeBuffer;
+	}
+
+	public Queue<V> getReadResultsBuffer() {
+		return readResults;
+	}
+
+	public void markEOF() {
+		eof = true;
 	}
 }

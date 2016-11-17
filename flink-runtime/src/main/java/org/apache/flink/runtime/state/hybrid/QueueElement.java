@@ -25,27 +25,19 @@ public class QueueElement {
 
 	private String fname;
 
-	private String value;
-
 	private long blockSize;
-
-	public QueueElement(String fname, String value) {
-		this.fname = fname;
-		this.value = value;
-	}
 
 	public QueueElement(String fname, long blockSize) {
 		this.fname = fname;
-		this.value = "";
 		this.blockSize = blockSize;
+	}
+
+	public QueueElement(String fname) {
+		this.fname = fname;
 	}
 
 	public String getFName() {
 		return fname;
-	}
-
-	public String getValue() {
-		return value;
 	}
 
 	public long getBlockSize() {
