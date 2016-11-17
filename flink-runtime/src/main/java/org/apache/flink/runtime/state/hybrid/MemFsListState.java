@@ -148,7 +148,7 @@ public class MemFsListState<K, N, V>
 								}
 
 								for(int i = 0; i < BucketList.BLOCK_SIZE && !writeBuffer.isEmpty(); i++) {
-									pw.println(writeBuffer.poll());
+									pw.println(serializer.serialize(writeBuffer.poll()));
 								}
 							}
 						}
