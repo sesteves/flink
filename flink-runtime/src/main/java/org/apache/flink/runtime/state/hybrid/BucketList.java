@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -120,64 +119,61 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				readingFromDisk = false;
 			}
 
-			if (!usePrimaryBucket) {
-
-				new Thread() {
-					@Override
-					public void run() {
-						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
-						primaryBucketLock.lock();
-						if(!abortSpilling && primaryBucket.size() > primaryBucketAfterFlushSize) {
-
-							if (first) {
-								firstLine = primaryBucket.removeLast();
-								line = firstLine;
-								first = false;
-							}
-
-							long excess = primaryBucket.size() - primaryBucketAfterFlushSize;
-							long blocks = excess / BLOCK_SIZE;
-							long remaining = excess % BLOCK_SIZE;
-
-							System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + remaining);
-
-							for (int i = 0; i < blocks; i++) {
-								// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
-
-								if (abortSpilling) {
-									// TODO flush string builder
-									System.out.println("spilling aborted...");
-									break;
-								}
-
-
-								spillQueue.add(new QueueElement(secondaryBucketFName, BLOCK_SIZE));
-								//secondaryBucket.println(json);
-
-								// add(primaryBucket.remove(0));
-
-								// TODO make more efficient add
-								// String json = serializer.serialize(value);
-
-							}
-							if (!abortSpilling && remaining != 0) {
-								spillQueue.add(new QueueElement(secondaryBucketFName, remaining));
-							}
-						} else {
-							System.out.println("spilling aborted...");
-						}
-						primaryBucketLock.unlock();
-
-					}
-				}.start();
-			}
-
-//			try {
-//				br.close();
-//				br = new BufferedReader(new FileReader(secondaryBucketFName));
-//			} catch (IOException e) {
-//				e.printStackTrace();
+			// spill disabled
+//			if (!usePrimaryBucket) {
+//				new Thread() {
+//					@Override
+//					public void run() {
+//						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
+//						primaryBucketLock.lock();
+//						if(!abortSpilling && primaryBucket.size() > primaryBucketAfterFlushSize) {
+//
+//							if (first) {
+//								firstLine = primaryBucket.removeLast();
+//								line = firstLine;
+//								first = false;
+//							}
+//
+//							long excess = primaryBucket.size() - primaryBucketAfterFlushSize;
+//							long blocks = excess / BLOCK_SIZE;
+//							long remaining = excess % BLOCK_SIZE;
+//
+//							System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + remaining);
+//
+//							for (int i = 0; i < blocks; i++) {
+//								// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
+//
+//								if (abortSpilling) {
+//									// TODO flush string builder
+//									System.out.println("spilling aborted...");
+//									break;
+//								}
+//
+//
+//								spillQueue.add(new QueueElement(secondaryBucketFName, BLOCK_SIZE));
+//								//secondaryBucket.println(json);
+//
+//								// add(primaryBucket.remove(0));
+//
+//								// TODO make more efficient add
+//								// String json = serializer.serialize(value);
+//
+//							}
+//							if (!abortSpilling && remaining != 0) {
+//								spillQueue.add(new QueueElement(secondaryBucketFName, remaining));
+//							}
+//						} else {
+//							System.out.println("spilling aborted...");
+//						}
+//						primaryBucketLock.unlock();
+//
+//					}
+//				}.start();
 //			}
+
+
+
+
 			if (firstLine != null) {
 				line = firstLine;
 			}
@@ -230,6 +226,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		if ((usePrimaryBucket && primaryBucket.size() < primaryBucketSize) ||
 			(!usePrimaryBucket && primaryBucket.size() < primaryBucketAfterFlushSize)) {
 			primaryBucket.add(value);
+
+			writeBuffer.add(value);
+			writeQueue.add(new QueueElement(secondaryBucketFName));
 		} else {
 			if (first) {
 				firstLine = value;
@@ -240,6 +239,19 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				writeQueue.add(new QueueElement(secondaryBucketFName));
 			}
 		}
+
+
+// spill disabled
+//		else {
+//			if (first) {
+//				firstLine = value;
+//				line = firstLine;
+//				first = false;
+//			} else {
+//				writeBuffer.add(value);
+//				writeQueue.add(new QueueElement(secondaryBucketFName));
+//			}
+//		}
 		return true;
 	}
 
@@ -273,10 +285,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	public BlockList<V> getPrimaryBucket() {
 		return primaryBucket;
-	}
-
-	public Lock getPrimaryBucketLock() {
-		return primaryBucketLock;
 	}
 
 	public Queue<V> getWriteBuffer() {

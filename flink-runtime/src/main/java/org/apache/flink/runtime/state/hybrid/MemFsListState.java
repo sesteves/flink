@@ -75,6 +75,7 @@ public class MemFsListState<K, N, V>
 
 	private Map<String, BucketList<V>> bucketLists = new ConcurrentHashMap<>();
 
+	// TODO reopen readers across processings
 	private Map<String, BufferedReader> readFiles = new HashMap<>();
 	private Map<String, PrintWriter> writeFiles = new HashMap<>();
 
