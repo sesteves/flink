@@ -32,7 +32,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private static final double PRIMARY_BUCKET_AFTER_FLUSH_FACTOR = 0.1;
 
-	public static final int BLOCK_SIZE = 10000;
+	public static final int BLOCK_SIZE = 15000;
 
 	// private List<V> primaryBucket;
 	private BlockList<V> primaryBucket;
@@ -113,6 +113,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			abortSpilling = false;
 			readRequested = false;
 			eof = false;
+			// spilling
+			primaryBucket.clear();
 
 			if (readingFromDisk) {
 				bucketListShared.setFinalProcessing(false);

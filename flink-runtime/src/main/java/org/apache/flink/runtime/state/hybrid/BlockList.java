@@ -92,6 +92,7 @@ public class BlockList<T> {
 	}
 
 	public void clear() {
+		size = 0;
 		blockList.clear();
 	}
 
