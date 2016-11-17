@@ -137,8 +137,10 @@ public class MemFsListState<K, N, V>
 
 					} else if (!writeQueue.isEmpty()) {
 						element = writeQueue.poll();
-						if(bucketLists.containsKey(element.getFName())) {
-							Queue<V> writeBuffer = bucketLists.get(element.getFName()).getWriteBuffer();
+
+						BucketList<V> bucketList = bucketLists.get(element.getFName());
+						if(bucketList != null) {
+							Queue<V> writeBuffer = bucketList.getWriteBuffer();
 
 							if (!writeBuffer.isEmpty()) {
 
@@ -149,7 +151,7 @@ public class MemFsListState<K, N, V>
 									writeFiles.put(element.getFName(), pw);
 								}
 
-								for(int i = 0; i < BucketList.BLOCK_SIZE && !writeBuffer.isEmpty(); i++) {
+								for (int i = 0; i < BucketList.BLOCK_SIZE && !writeBuffer.isEmpty(); i++) {
 									pw.println(serializer.serialize(writeBuffer.poll()));
 								}
 							}
