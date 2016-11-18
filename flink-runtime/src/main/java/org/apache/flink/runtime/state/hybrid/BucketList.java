@@ -144,7 +144,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 //								// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
 //
 //								if (abortSpilling) {
-//									// TODO flush string builder
 //									System.out.println("spilling aborted...");
 //									break;
 //								}
@@ -155,7 +154,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 //
 //								// add(primaryBucket.remove(0));
 //
-//								// TODO make more efficient add
 //								// String json = serializer.serialize(value);
 //
 //							}
@@ -187,7 +185,10 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	public V next() {
 		V result = null;
 
+		// TODO fix bug getting more elements
+
 		if(line != null && !readRequested) {
+			System.out.println("requesting read...");
 			readQueue.add(new QueueElement(secondaryBucketFName));
 			readRequested = true;
 		}
