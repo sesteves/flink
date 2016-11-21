@@ -113,6 +113,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			abortSpilling = false;
 			readRequested = false;
 			eof = false;
+			primaryBucket.clear();
 
 			if (readingFromDisk) {
 				bucketListShared.setFinalProcessing(false);
@@ -184,8 +185,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	@Override
 	public V next() {
 		V result = null;
-
-		// TODO fix bug getting more elements
 
 		if(line != null && !readRequested) {
 			System.out.println("requesting read...");
