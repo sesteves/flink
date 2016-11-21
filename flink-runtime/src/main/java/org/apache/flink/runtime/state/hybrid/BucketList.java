@@ -113,6 +113,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			abortSpilling = false;
 			readRequested = false;
 			eof = false;
+			primaryBucket.showContents();
+			line = primaryBucket.get(0);
 			primaryBucket.clear();
 
 			if (readingFromDisk) {

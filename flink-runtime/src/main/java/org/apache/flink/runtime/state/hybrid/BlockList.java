@@ -58,7 +58,6 @@ public class BlockList<T> {
 	public T get(int index) {
 		int block = index / blockSize;
 		int remaining = index % blockSize;
-
 		return blockList.get(block).get(remaining);
 	}
 
@@ -98,5 +97,11 @@ public class BlockList<T> {
 
 	public boolean isEmpty() {
 		return size == 0;
+	}
+
+	public void showContents() {
+		for(int i = 0; i < blockList.size(); i++) {
+			System.out.println("index " + i + ", size: " + blockList.get(i).size());
+		}
 	}
 }
