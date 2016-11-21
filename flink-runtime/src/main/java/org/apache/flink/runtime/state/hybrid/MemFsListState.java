@@ -104,13 +104,17 @@ public class MemFsListState<K, N, V>
 					} else if (!readQueue.isEmpty()) {
 						element = readQueue.poll();
 
+						int count = 0;
+						// TODO values in the write buffer should still be written to disk?
 						// read remaining elements that were not written to disk
 						BucketList<V> bucketList = bucketLists.get(element.getFName());
 						Queue<V> writeBuffer = bucketList.getWriteBuffer();
 						Queue<V> results = bucketList.getReadResultsBuffer();
 						while(!writeBuffer.isEmpty()) {
+							count++;
 							results.add(writeBuffer.poll());
 						}
+						System.out.println("Read from queue: " + count);
 
 						BufferedReader br = readFiles.get(element.getFName());
 						if (br == null) {
@@ -129,11 +133,15 @@ public class MemFsListState<K, N, V>
 						// does not fit in 1 window duration
 						writeFiles.get(element.getFName()).flush();
 
+						count = 0;
 						String value;
 						while ((value = br.readLine()) != null) {
+							count++;
 							results.add((V) deserializer.deserialize(value));
 						}
 						bucketList.markEOF();
+
+						System.out.println("Read from disk: " + count);
 
 					} else if (!writeQueue.isEmpty()) {
 						element = writeQueue.poll();
