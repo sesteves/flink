@@ -113,11 +113,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			abortSpilling = false;
 			readRequested = false;
 			eof = false;
-			primaryBucket.showContents();
+
+			primaryBucketAfterFlushSize = -1;
 			if(!primaryBucket.isEmpty()) {
 				line = primaryBucket.get(0);
 				primaryBucket.clear();
 			}
+
 
 			if (readingFromDisk) {
 				bucketListShared.setFinalProcessing(false);
@@ -196,7 +198,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			readRequested = true;
 		}
 
-		if (line == null && primaryBucketIndex < primaryBucket.size()) {
+		if (primaryBucketIndex < primaryBucket.size()) {
 			if (!usePrimaryBucket) {
 				abortSpilling = true;
 			}
