@@ -114,8 +114,10 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			readRequested = false;
 			eof = false;
 			primaryBucket.showContents();
-			line = primaryBucket.get(0);
-			primaryBucket.clear();
+			if(!primaryBucket.isEmpty()) {
+				line = primaryBucket.get(0);
+				primaryBucket.clear();
+			}
 
 			if (readingFromDisk) {
 				bucketListShared.setFinalProcessing(false);
