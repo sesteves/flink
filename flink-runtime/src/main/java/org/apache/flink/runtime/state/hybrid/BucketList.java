@@ -33,7 +33,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private static final double PRIMARY_BUCKET_AFTER_FLUSH_FACTOR = 0.1;
 
-	public static final int BLOCK_SIZE = 15000;
+	// TODO currently this value must be a multiple of number of tuples after flush
+	public static final int BLOCK_SIZE = 20000;
 
 	// private List<V> primaryBucket;
 	private BlockList<V> primaryBucket;
