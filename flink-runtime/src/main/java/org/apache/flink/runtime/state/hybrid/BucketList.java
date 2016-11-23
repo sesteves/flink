@@ -33,7 +33,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private static final double PRIMARY_BUCKET_AFTER_FLUSH_FACTOR = 0.1;
 
-	public static final int BLOCK_SIZE = 10000;
+	public static final int BLOCK_SIZE = 15000;
 
 	// private List<V> primaryBucket;
 	private BlockList<V> primaryBucket;
@@ -76,7 +76,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private boolean eof = false;
 
-	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue, Queue<QueueElement> writeQueue, Queue<QueueElement> spillQueue) {
+	private boolean spill;
+
+	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue, Queue<QueueElement> writeQueue, Queue<QueueElement> spillQueue, boolean spill) {
 //		primaryBucket = new ArrayList<>(primaryBucketSize);
 		primaryBucket = new BlockList<>(primaryBucketSize, BLOCK_SIZE);
 
@@ -88,6 +90,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		this.readQueue = readQueue;
 		this.writeQueue = writeQueue;
 		this.spillQueue = spillQueue;
+		this.spill = spill;
 
 //		buffer = new ArrayList<>(primaryBucketSize);
 
@@ -120,7 +123,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				readingFromDisk = false;
 			}
 
-			if (!usePrimaryBucket) {
+			if (spill && !usePrimaryBucket) {
 
 				new Thread() {
 					@Override

@@ -84,6 +84,10 @@ public class MemFsListState<K, N, V>
 
 	private final Semaphore semaphoreEnd = new Semaphore(N_THREADS);
 
+	private boolean spill;
+
+	private double tuplesAfterSpillFactor;
+
 	private Thread ioThread = new Thread() {
 		@Override
 		public void run() {
@@ -172,9 +176,10 @@ public class MemFsListState<K, N, V>
 	};
 
 
-	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, int maxTuplesInMemory) {
+	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, int maxTuplesInMemory, double tuplesAfterSpillFactor) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc);
 		this.maxTuplesInMemory = maxTuplesInMemory;
+		this.tuplesAfterSpillFactor = tuplesAfterSpillFactor;
 
 		semaphoreStart.tryAcquire(N_THREADS);
 		semaphoreEnd.tryAcquire(N_THREADS);
@@ -220,9 +225,10 @@ public class MemFsListState<K, N, V>
 
 		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
 		if (bucketList == null) {
-			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, spillQueue);
+			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, spillQueue, spill);
 			bucketLists.put(bucketList.getSecondaryBucketFName(), bucketList);
 			currentNSState.put(currentKey, bucketList);
+			spill = !spill;
 		}
 
 		bucketList.add(value);

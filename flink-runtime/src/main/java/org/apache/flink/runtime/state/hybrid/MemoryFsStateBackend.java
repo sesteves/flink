@@ -59,6 +59,9 @@ public class MemoryFsStateBackend extends AbstractStateBackend {
 	/** */
 	private final int maxTuplesInMemory;
 
+	/** */
+	private final double tuplesAfterSpillFactor;
+
 	/**
 	 * Creates a new memory state backend that accepts states whose serialized forms are
 	 * up to the default state size (5 MB).
@@ -66,14 +69,16 @@ public class MemoryFsStateBackend extends AbstractStateBackend {
 	public MemoryFsStateBackend() {
 		// this(DEFAULT_MAX_STATE_SIZE);
 		this.maxTuplesInMemory = 100000;
+		this.tuplesAfterSpillFactor = 0.1;
 		this.maxStateSize = DEFAULT_MAX_STATE_SIZE;
 	}
 
 	/**
 	 *
 	 */
-	public MemoryFsStateBackend(int maxTuplesInMemory) {
+	public MemoryFsStateBackend(int maxTuplesInMemory, double tuplesAfterSpillFactor) {
 		this.maxTuplesInMemory = maxTuplesInMemory;
+		this.tuplesAfterSpillFactor = tuplesAfterSpillFactor;
 		this.maxStateSize = DEFAULT_MAX_STATE_SIZE;
 	}
 
@@ -110,7 +115,7 @@ public class MemoryFsStateBackend extends AbstractStateBackend {
 
 	@Override
 	public <N, T> ListState<T> createListState(TypeSerializer<N> namespaceSerializer, ListStateDescriptor<T> stateDesc) throws Exception {
-		return new MemFsListState<>(keySerializer, namespaceSerializer, stateDesc, maxTuplesInMemory);
+		return new MemFsListState<>(keySerializer, namespaceSerializer, stateDesc, maxTuplesInMemory, tuplesAfterSpillFactor);
 	}
 
 	@Override
