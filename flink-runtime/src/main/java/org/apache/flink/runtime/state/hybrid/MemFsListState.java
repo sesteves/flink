@@ -225,7 +225,7 @@ public class MemFsListState<K, N, V>
 
 		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
 		if (bucketList == null) {
-			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, spillQueue, spill);
+			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, spillQueue, tuplesAfterSpillFactor, spill);
 			bucketLists.put(bucketList.getSecondaryBucketFName(), bucketList);
 			currentNSState.put(currentKey, bucketList);
 			spill = !spill;

@@ -79,12 +79,14 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private boolean spill;
 
-	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue, Queue<QueueElement> writeQueue, Queue<QueueElement> spillQueue, boolean spill) {
+	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue,
+					  Queue<QueueElement> writeQueue, Queue<QueueElement> spillQueue, double tuplesAfterSpillFactor,
+					  boolean spill) {
 //		primaryBucket = new ArrayList<>(primaryBucketSize);
 		primaryBucket = new BlockList<>(primaryBucketSize, BLOCK_SIZE);
 
 		this.primaryBucketSize = primaryBucketSize;
-		primaryBucketAfterFlushSize = Math.round(PRIMARY_BUCKET_AFTER_FLUSH_FACTOR * primaryBucketSize);
+		primaryBucketAfterFlushSize = Math.round(tuplesAfterSpillFactor * primaryBucketSize);
 
 		this.bucketListShared = bucketListShared;
 
