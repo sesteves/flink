@@ -20,7 +20,6 @@ package org.apache.flink.runtime.state.hybrid;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -130,7 +129,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 					@Override
 					public void run() {
 						// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
-						primaryBucketLock.lock();
+						// primaryBucketLock.lock();
+
 						if(!abortSpilling && primaryBucket.size() > primaryBucketAfterFlushSize) {
 
 							if (first) {
@@ -168,12 +168,15 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 								spillQueue.add(new QueueElement(secondaryBucketFName, remaining));
 							}
 						} else {
-							System.out.println("spilling aborted...");
+							System.out.println("No spill performed.");
 						}
-						primaryBucketLock.unlock();
+						//primaryBucketLock.unlock();
 
 					}
 				}.start();
+
+				// spill is performed only a single time
+				spill = false;
 			}
 
 //			try {
@@ -217,7 +220,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			// collect result
 			long startTick = System.currentTimeMillis();
 			while(readResults.isEmpty() && !eof) {
-				if(System.currentTimeMillis() - startTick > 2000) {
+				if(System.currentTimeMillis() - startTick > 1000) {
 					System.out.println("taking to long to obtain results...");
 					startTick = System.currentTimeMillis();
 				}

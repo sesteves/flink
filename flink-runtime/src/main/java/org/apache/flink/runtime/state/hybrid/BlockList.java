@@ -33,7 +33,7 @@ public class BlockList<T> {
 
 	private int size = 0;
 
-	private int countBlocks = 0;
+//	private int countBlocks = 0;
 
 	public BlockList(int capacity, int blockSize) {
 		this.blockSize = blockSize;
