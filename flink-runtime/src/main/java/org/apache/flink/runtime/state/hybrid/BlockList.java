@@ -33,6 +33,8 @@ public class BlockList<T> {
 
 	private int size = 0;
 
+	private int countBlocks = 0;
+
 	public BlockList(int capacity, int blockSize) {
 		this.blockSize = blockSize;
 
@@ -60,6 +62,20 @@ public class BlockList<T> {
 		int remaining = index % blockSize;
 		return blockList.get(block).get(remaining);
 	}
+
+//	public synchronized List<T> getBlock() {
+//		List<T> list = blockList.get(countBlocks++);
+//		return list;
+//	}
+//
+//	public synchronized List<T> getLastBlock() {
+//		int lastBlock = size / blockSize;
+//		if(size % blockSize == 0) {
+//			lastBlock--;
+//		}
+//		List<T> list = blockList.get(lastBlock);
+//		return list;
+//	}
 
 	public synchronized List<T> removeBlock() {
 		List<T> list = blockList.remove(0);

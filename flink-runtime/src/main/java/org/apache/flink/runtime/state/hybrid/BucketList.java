@@ -20,6 +20,7 @@ package org.apache.flink.runtime.state.hybrid;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -31,17 +32,15 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable<V> {
 
-	private static final double PRIMARY_BUCKET_AFTER_FLUSH_FACTOR = 0.1;
-
 	// TODO currently this value must be a multiple of number of tuples after flush
 	public static final int BLOCK_SIZE = 20000;
 
 	// private List<V> primaryBucket;
 	private BlockList<V> primaryBucket;
 
-	private long primaryBucketSize;
+	private int primaryBucketSize;
 
-	private long primaryBucketAfterFlushSize;
+	private int primaryBucketAfterFlushSize;
 
 	private int primaryBucketIndex = 0;
 
@@ -81,11 +80,11 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue,
 		Queue<QueueElement> writeQueue, Queue<QueueElement> spillQueue, double tuplesAfterSpillFactor, boolean spill) {
-//		primaryBucket = new ArrayList<>(primaryBucketSize);
-		primaryBucket = new BlockList<>(primaryBucketSize, BLOCK_SIZE);
 
 		this.primaryBucketSize = primaryBucketSize;
-		primaryBucketAfterFlushSize = Math.round(tuplesAfterSpillFactor * primaryBucketSize);
+		primaryBucketAfterFlushSize = (int) Math.round(tuplesAfterSpillFactor * primaryBucketSize);
+
+		primaryBucket = new BlockList<>(primaryBucketSize, BLOCK_SIZE);
 
 		this.bucketListShared = bucketListShared;
 
@@ -205,9 +204,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 				abortSpilling = true;
 			}
 
-			primaryBucketLock.lock();
+// 			primaryBucketLock.lock();
 			result = primaryBucket.get(primaryBucketIndex++);
-			primaryBucketLock.unlock();
+//			primaryBucketLock.unlock();
 
 		} else if (line != null) {
 			readingFromDisk = true;

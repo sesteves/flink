@@ -315,7 +315,7 @@ public class MemFsListState<K, N, V>
 
 						StringBuilder sb = new StringBuilder();
 						for (int i = 0; i < element.getBlockSize(); i++) {
-							sb.append(serializer.serialize(block.remove(0)));
+							sb.append(serializer.serialize(block.get(i)));
 							sb.append('\n');
 						}
 
