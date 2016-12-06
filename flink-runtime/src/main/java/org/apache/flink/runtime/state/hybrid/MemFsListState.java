@@ -60,8 +60,6 @@ public class MemFsListState<K, N, V>
 	extends AbstractMemState<K, N, ArrayList<V>, ListState<V>, ListStateDescriptor<V>>
 	implements ListState<V> {
 
-	private static final int N_THREADS = 4;
-
 	private int maxTuplesInMemory;
 
 	private JSONSerializer serializer = new JSONSerializer();
@@ -80,13 +78,15 @@ public class MemFsListState<K, N, V>
 
 	private Queue<String> flushes = new ConcurrentLinkedQueue<>();
 
-	private final Semaphore semaphoreStart = new Semaphore(N_THREADS);
+	private final Semaphore semaphoreStart;
 
-	private final Semaphore semaphoreEnd = new Semaphore(N_THREADS);
+	private final Semaphore semaphoreEnd;
 
 	private boolean spill;
 
 	private double tuplesAfterSpillFactor;
+
+	private int spillThreads;
 
 	private Thread ioThread = new Thread() {
 		@Override
@@ -140,8 +140,10 @@ public class MemFsListState<K, N, V>
 
 					} else if (!writeQueue.isEmpty()) {
 						element = writeQueue.poll();
-						if(bucketLists.containsKey(element.getFName())) {
-							Queue<V> writeBuffer = bucketLists.get(element.getFName()).getWriteBuffer();
+
+						BucketList<V> bucketList = bucketLists.get(element.getFName());
+						if(bucketList != null) {
+							Queue<V> writeBuffer = bucketList.getWriteBuffer();
 
 							if (!writeBuffer.isEmpty()) {
 
@@ -158,8 +160,8 @@ public class MemFsListState<K, N, V>
 							}
 						}
 					} else if (!spillQueue.isEmpty()){
-						semaphoreStart.release(N_THREADS);
-						semaphoreEnd.acquire(N_THREADS);
+						semaphoreStart.release(spillThreads);
+						semaphoreEnd.acquire(spillThreads);
 
 					} else {
 						Thread.sleep(0);
@@ -176,16 +178,20 @@ public class MemFsListState<K, N, V>
 	};
 
 
-	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, int maxTuplesInMemory, double tuplesAfterSpillFactor) {
+	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer,
+		ListStateDescriptor<V> stateDesc, int maxTuplesInMemory, double tuplesAfterSpillFactor, int spillThreads) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc);
 		this.maxTuplesInMemory = maxTuplesInMemory;
 		this.tuplesAfterSpillFactor = tuplesAfterSpillFactor;
+		this.spillThreads = spillThreads;
 
-		semaphoreStart.tryAcquire(N_THREADS);
-		semaphoreEnd.tryAcquire(N_THREADS);
+		semaphoreStart = new Semaphore(spillThreads);
+		semaphoreEnd = new Semaphore(spillThreads);
+		semaphoreStart.tryAcquire(spillThreads);
+		semaphoreEnd.tryAcquire(spillThreads);
 
-		ExecutorService executor = Executors.newFixedThreadPool(N_THREADS);
-		for(int i = 0; i < N_THREADS; i++) {
+		ExecutorService executor = Executors.newFixedThreadPool(spillThreads);
+		for(int i = 0; i < spillThreads; i++) {
 			executor.execute(new SpillThread());
 		}
 		ioThread.start();
@@ -193,6 +199,9 @@ public class MemFsListState<K, N, V>
 
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, HashMap<N, Map<K, ArrayList<V>>> state) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc, state);
+
+		semaphoreStart = null;
+		semaphoreEnd = null;
 	}
 
 	@Override
@@ -225,10 +234,10 @@ public class MemFsListState<K, N, V>
 
 		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
 		if (bucketList == null) {
-			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, spillQueue, tuplesAfterSpillFactor, spill);
+			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, spillQueue, tuplesAfterSpillFactor, true);
 			bucketLists.put(bucketList.getSecondaryBucketFName(), bucketList);
 			currentNSState.put(currentKey, bucketList);
-			spill = !spill;
+//			spill = !spill;
 		}
 
 		bucketList.add(value);
@@ -303,15 +312,8 @@ public class MemFsListState<K, N, V>
 
 					BucketList<V> bucketList = bucketLists.get(element.getFName());
 					if (bucketList != null) {
-
 						BlockList<V> primaryBucket = bucketList.getPrimaryBucket();
-
-						List<V> block;
-						if (element.getBlockSize() == BucketList.BLOCK_SIZE) {
-							block = primaryBucket.removeBlock();
-						} else {
-							block = primaryBucket.removeLastBlock();
-						}
+						List<V> block = primaryBucket.removeBlock(element.getBlockSize());
 
 						StringBuilder sb = new StringBuilder();
 						for (int i = 0; i < element.getBlockSize(); i++) {

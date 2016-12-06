@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable<V> {
 
 	// TODO currently this value must be a multiple of number of tuples after flush
-	public static final int BLOCK_SIZE = 35000;
+	public static final int BLOCK_SIZE = 20000;
 
 	// private List<V> primaryBucket;
 	private BlockList<V> primaryBucket;
@@ -139,9 +139,9 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 								first = false;
 							}
 
-							long excess = primaryBucket.size() - primaryBucketAfterFlushSize;
-							long blocks = excess / BLOCK_SIZE;
-							long remaining = excess % BLOCK_SIZE;
+							int excess = primaryBucket.size() - primaryBucketAfterFlushSize;
+							int blocks = excess / BLOCK_SIZE;
+							int remaining = excess % BLOCK_SIZE;
 
 							System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + remaining);
 
