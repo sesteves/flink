@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable<V> {
 
 	// TODO currently this value must be a multiple of number of tuples after flush
-	public static final int BLOCK_SIZE = 10000;
+	public static final int BLOCK_SIZE = 35000;
 
 	// private List<V> primaryBucket;
 	private BlockList<V> primaryBucket;
