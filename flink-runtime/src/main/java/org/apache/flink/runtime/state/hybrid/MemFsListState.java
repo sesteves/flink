@@ -251,9 +251,9 @@ public class MemFsListState<K, N, V>
 	public void clean() {
 		System.out.println("clean called...");
 		BucketList<V> bucketList = (BucketList<V>) get();
-		bucketList.clear();
 		String id = bucketList.getSecondaryBucketFName();
 		bucketLists.remove(id);
+		bucketList.clear();
 		readFiles.remove(id);
 		writeFiles.remove(id);
 	}
