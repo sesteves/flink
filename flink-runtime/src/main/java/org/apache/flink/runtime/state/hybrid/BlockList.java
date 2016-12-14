@@ -93,7 +93,7 @@ public class BlockList<T> {
 				list = blockList.remove(--lastBlock);
 			}
 		}
-		size -= list.size();
+		size -= minimumSize;
 		return list;
 	}
 
