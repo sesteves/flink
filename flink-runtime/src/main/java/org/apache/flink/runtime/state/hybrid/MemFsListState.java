@@ -33,6 +33,7 @@ import scala.Tuple2;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -60,6 +61,9 @@ public class MemFsListState<K, N, V>
 	extends AbstractMemState<K, N, ArrayList<V>, ListState<V>, ListStateDescriptor<V>>
 	implements ListState<V> {
 
+	// TODO get this size when records are written
+	private static final int LINE_LENGTH = 2292;
+
 	private int maxTuplesInMemory;
 
 	private JSONSerializer serializer = new JSONSerializer();
@@ -78,15 +82,17 @@ public class MemFsListState<K, N, V>
 
 	private Queue<String> flushes = new ConcurrentLinkedQueue<>();
 
-	private final Semaphore semaphoreStart;
+	private final Semaphore semaphoreSpillStart, semaphoreSpillEnd;
 
-	private final Semaphore semaphoreEnd;
+	private final Semaphore semaphoreReadStart, semaphoreReadEnd;
 
 	private boolean spill;
 
 	private double tuplesAfterSpillFactor;
 
 	private int spillThreads;
+
+	private BucketList<V> bucketListToRead;
 
 	private Thread ioThread = new Thread() {
 		@Override
@@ -106,37 +112,15 @@ public class MemFsListState<K, N, V>
 
 					} else if (!readQueue.isEmpty()) {
 						element = readQueue.poll();
-
-						// read remaining elements that were not written to disk
-						BucketList<V> bucketList = bucketLists.get(element.getFName());
-						Queue<V> writeBuffer = bucketList.getWriteBuffer();
-						Queue<V> results = bucketList.getReadResultsBuffer();
-						while(!writeBuffer.isEmpty()) {
-							results.add(writeBuffer.poll());
-						}
-
-						BufferedReader br = readFiles.get(element.getFName());
-						if (br == null) {
-							System.out.println("opening file " + element.getFName());
-							File f = new File(element.getFName());
-							if(!f.exists()) {
-								System.out.println("File does not exist: " + element.getFName());
-								bucketList.markEOF();
-								continue;
-							}
-							br = new BufferedReader(new FileReader(f));
-							readFiles.put(element.getFName(), br);
-						}
+						bucketListToRead = bucketLists.get(element.getFName());
 
 						// this flush is necessary for when there is a single past window and a spill does not
 						// does not fit in 1 window duration
 						writeFiles.get(element.getFName()).flush();
 
-						String value;
-						while ((value = br.readLine()) != null) {
-							results.add((V) deserializer.deserialize(value));
-						}
-						bucketList.markEOF();
+						semaphoreReadStart.release(spillThreads);
+						semaphoreReadEnd.acquire(spillThreads);
+						bucketListToRead.markEOF();
 
 					} else if (!writeQueue.isEmpty()) {
 						element = writeQueue.poll();
@@ -160,8 +144,8 @@ public class MemFsListState<K, N, V>
 							}
 						}
 					} else if (!spillQueue.isEmpty()){
-						semaphoreStart.release(spillThreads);
-						semaphoreEnd.acquire(spillThreads);
+						semaphoreSpillStart.release(spillThreads);
+						semaphoreSpillEnd.acquire(spillThreads);
 
 					} else {
 						Thread.sleep(0);
@@ -185,23 +169,37 @@ public class MemFsListState<K, N, V>
 		this.tuplesAfterSpillFactor = tuplesAfterSpillFactor;
 		this.spillThreads = spillThreads;
 
-		semaphoreStart = new Semaphore(spillThreads);
-		semaphoreEnd = new Semaphore(spillThreads);
-		semaphoreStart.tryAcquire(spillThreads);
-		semaphoreEnd.tryAcquire(spillThreads);
+		semaphoreSpillStart = new Semaphore(spillThreads);
+		semaphoreSpillEnd = new Semaphore(spillThreads);
+		semaphoreSpillStart.tryAcquire(spillThreads);
+		semaphoreSpillEnd.tryAcquire(spillThreads);
 
-		ExecutorService executor = Executors.newFixedThreadPool(spillThreads);
+		ExecutorService executorSpill = Executors.newFixedThreadPool(spillThreads);
 		for(int i = 0; i < spillThreads; i++) {
-			executor.execute(new SpillThread());
+			executorSpill.execute(new SpillThread());
 		}
+
+		// TODO change name of spill threads
+		semaphoreReadStart = new Semaphore(spillThreads);
+		semaphoreReadEnd = new Semaphore(spillThreads);
+		semaphoreReadStart.tryAcquire(spillThreads);
+		semaphoreReadEnd.tryAcquire(spillThreads);
+
+		ExecutorService executorRead = Executors.newFixedThreadPool(spillThreads);
+		for(int i = 0; i < spillThreads; i++) {
+			executorRead.execute(new ReadThread());
+		}
+
 		ioThread.start();
 	}
 
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer, ListStateDescriptor<V> stateDesc, HashMap<N, Map<K, ArrayList<V>>> state) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc, state);
 
-		semaphoreStart = null;
-		semaphoreEnd = null;
+		semaphoreSpillStart = null;
+		semaphoreSpillEnd = null;
+		semaphoreReadStart = null;
+		semaphoreReadEnd = null;
 	}
 
 	@Override
@@ -289,7 +287,7 @@ public class MemFsListState<K, N, V>
 			while (true) {
 
 				try {
-					semaphoreStart.acquire();
+					semaphoreSpillStart.acquire();
 
 					QueueElement element = spillQueue.poll();
 					if (element == null) {
@@ -329,7 +327,63 @@ public class MemFsListState<K, N, V>
 				} catch(InterruptedException e) {
 					e.printStackTrace();
 				} finally {
-					semaphoreEnd.release();
+					semaphoreSpillEnd.release();
+				}
+
+			}
+		}
+	}
+
+	private class ReadThread implements Runnable {
+		@Override
+		public void run() {
+			while (true) {
+
+				try {
+					semaphoreReadStart.acquire();
+
+					// read remaining elements that were not written to disk
+					Queue<V> writeBuffer = bucketListToRead.getWriteBuffer();
+					Queue<V> results = bucketListToRead.getReadResultsBuffer();
+					while(!writeBuffer.isEmpty()) {
+						// to avoid locks we catch the exception
+						try {
+							results.add(writeBuffer.poll());
+						} catch (NullPointerException e) {
+							break;
+						}
+					}
+
+					BufferedReader br;
+					synchronized (getInstance()) {
+						String fname = bucketListToRead.getSecondaryBucketFName();
+						br = readFiles.get(fname);
+						if (br == null) {
+							System.out.println("opening file " + fname);
+							File f = new File(fname);
+							if (!f.exists()) {
+								System.out.println("File does not exist: " + fname);
+								bucketListToRead.markEOF();
+								continue;
+							}
+							br = new BufferedReader(new FileReader(f), LINE_LENGTH * BucketList.BLOCK_SIZE);
+							readFiles.put(fname, br);
+						}
+					}
+
+					String value;
+					while ((value = br.readLine()) != null) {
+						results.add((V) deserializer.deserialize(value));
+					}
+
+				} catch(InterruptedException e) {
+					e.printStackTrace();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				} finally {
+					semaphoreReadEnd.release();
 				}
 
 			}
