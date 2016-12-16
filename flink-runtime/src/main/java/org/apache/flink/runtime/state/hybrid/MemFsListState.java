@@ -113,17 +113,16 @@ public class MemFsListState<K, N, V>
 					} else if (!readQueue.isEmpty()) {
 						element = readQueue.poll();
 
+						bucketListToRead = bucketLists.get(element.getFName());
+
 						// this flush is necessary for when there is a single past window and a spill does not
 						// does not fit in 1 window duration
 						PrintWriter pw = writeFiles.get(element.getFName());
-						if(pw == null) {
-							continue;
+						if(pw != null) {
+							pw.flush();
+							semaphoreReadStart.release(spillThreads);
+							semaphoreReadEnd.acquire(spillThreads);
 						}
-						pw.flush();
-						bucketListToRead = bucketLists.get(element.getFName());
-
-						semaphoreReadStart.release(spillThreads);
-						semaphoreReadEnd.acquire(spillThreads);
 						bucketListToRead.markEOF();
 
 					} else if (!writeQueue.isEmpty()) {
