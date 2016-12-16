@@ -77,6 +77,13 @@ public class BlockList<T> {
 		return list;
 	}
 
+	public synchronized int getLastBlockSize() {
+		int lastBlock = size / blockSize;
+		if(size % blockSize == 0) {
+			lastBlock--;
+		}
+		return blockList.get(lastBlock).size();
+	}
 
 	public synchronized List<T> removeBlock(int minimumSize) {
 		List<T> list;

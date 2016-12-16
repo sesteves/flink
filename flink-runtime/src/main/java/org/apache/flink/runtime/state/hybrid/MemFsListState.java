@@ -322,27 +322,26 @@ public class MemFsListState<K, N, V>
 								sb.append('\n');
 							}
 						} else {
-							block = primaryBucket.getLastBlock();
-							if (element.getBlockSize() >= block.size()) {
-								primaryBucket.removeLastBlock();
+							int lastBlockSize = primaryBucket.getLastBlockSize();
+							if (element.getBlockSize() >= lastBlockSize) {
+								block = primaryBucket.removeLastBlock();
 
-								for (int i = 0; i < block.size(); i++) {
+								for (int i = 0; i < lastBlockSize; i++) {
 									sb.append(serializer.serialize(block.get(i)));
 									sb.append('\n');
 								}
 
-								if(element.getBlockSize() > block.size()) {
-									int remaining = element.getBlockSize() - block.size();
-									block = primaryBucket.getLastBlock();
+								if(element.getBlockSize() > lastBlockSize) {
+									int remaining = element.getBlockSize() - lastBlockSize;
 
 									for (int i = 0; i < remaining; i++) {
-										sb.append(serializer.serialize(block.remove(i)));
+										sb.append(serializer.serialize(primaryBucket.removeLast()));
 										sb.append('\n');
 									}
 								}
 							} else {
 								for (int i = 0; i < element.getBlockSize(); i++) {
-									sb.append(serializer.serialize(block.remove(i)));
+									sb.append(serializer.serialize(primaryBucket.removeLast()));
 									sb.append('\n');
 								}
 							}
