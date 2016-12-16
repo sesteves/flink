@@ -293,6 +293,10 @@ public class MemFsListState<K, N, V>
 					if (element == null) {
 						continue;
 					}
+					BucketList<V> bucketList = bucketLists.get(element.getFName());
+					if (bucketList == null || bucketList.getEOF()) {
+						continue;
+					}
 
 					PrintWriter pw;
 					synchronized (getInstance()) {
@@ -308,50 +312,46 @@ public class MemFsListState<K, N, V>
 						}
 					}
 
-					BucketList<V> bucketList = bucketLists.get(element.getFName());
-					if (bucketList != null) {
-						BlockList<V> primaryBucket = bucketList.getPrimaryBucket();
+					BlockList<V> primaryBucket = bucketList.getPrimaryBucket();
 
-						StringBuilder sb = new StringBuilder();
-						List<V> block;
-						if (element.getBlockSize() == BucketList.BLOCK_SIZE) {
-							block = primaryBucket.removeBlock();
+					StringBuilder sb = new StringBuilder();
+					List<V> block;
+					if (element.getBlockSize() == BucketList.BLOCK_SIZE) {
+						block = primaryBucket.removeBlock();
 
-							for (int i = 0; i < element.getBlockSize(); i++) {
+						for (int i = 0; i < element.getBlockSize(); i++) {
+							sb.append(serializer.serialize(block.get(i)));
+							sb.append('\n');
+						}
+					} else {
+						int lastBlockSize = primaryBucket.getLastBlockSize();
+						if (element.getBlockSize() >= lastBlockSize) {
+							block = primaryBucket.removeLastBlock();
+
+							for (int i = 0; i < lastBlockSize; i++) {
 								sb.append(serializer.serialize(block.get(i)));
 								sb.append('\n');
 							}
-						} else {
-							int lastBlockSize = primaryBucket.getLastBlockSize();
-							if (element.getBlockSize() >= lastBlockSize) {
-								block = primaryBucket.removeLastBlock();
 
-								for (int i = 0; i < lastBlockSize; i++) {
-									sb.append(serializer.serialize(block.get(i)));
-									sb.append('\n');
-								}
+							if (element.getBlockSize() > lastBlockSize) {
+								int remaining = element.getBlockSize() - lastBlockSize;
 
-								if(element.getBlockSize() > lastBlockSize) {
-									int remaining = element.getBlockSize() - lastBlockSize;
-
-									for (int i = 0; i < remaining; i++) {
-										sb.append(serializer.serialize(primaryBucket.removeLast()));
-										sb.append('\n');
-									}
-								}
-							} else {
-								for (int i = 0; i < element.getBlockSize(); i++) {
+								for (int i = 0; i < remaining; i++) {
 									sb.append(serializer.serialize(primaryBucket.removeLast()));
 									sb.append('\n');
 								}
 							}
+						} else {
+							for (int i = 0; i < element.getBlockSize(); i++) {
+								sb.append(serializer.serialize(primaryBucket.removeLast()));
+								sb.append('\n');
+							}
 						}
-
-						pw.print(sb.toString());
-
-						System.out.println("spilled block.. pBucket size: " + primaryBucket.size());
-
 					}
+
+					pw.print(sb.toString());
+
+					System.out.println("spilled block.. pBucket size: " + primaryBucket.size());
 				} catch(InterruptedException e) {
 					e.printStackTrace();
 				} finally {

@@ -297,4 +297,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	public void markEOF() {
 		eof = true;
 	}
+
+	public boolean getEOF() {
+		return eof;
+	}
 }
