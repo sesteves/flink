@@ -311,12 +311,41 @@ public class MemFsListState<K, N, V>
 					BucketList<V> bucketList = bucketLists.get(element.getFName());
 					if (bucketList != null) {
 						BlockList<V> primaryBucket = bucketList.getPrimaryBucket();
-						List<V> block = primaryBucket.removeBlock(element.getBlockSize());
 
 						StringBuilder sb = new StringBuilder();
-						for (int i = 0; i < element.getBlockSize(); i++) {
-							sb.append(serializer.serialize(block.get(i)));
-							sb.append('\n');
+						List<V> block;
+						if (element.getBlockSize() == BucketList.BLOCK_SIZE) {
+							block = primaryBucket.removeBlock();
+
+							for (int i = 0; i < element.getBlockSize(); i++) {
+								sb.append(serializer.serialize(block.get(i)));
+								sb.append('\n');
+							}
+						} else {
+							block = primaryBucket.getLastBlock();
+							if (element.getBlockSize() >= block.size()) {
+								primaryBucket.removeLastBlock();
+
+								for (int i = 0; i < block.size(); i++) {
+									sb.append(serializer.serialize(block.get(i)));
+									sb.append('\n');
+								}
+
+								if(element.getBlockSize() > block.size()) {
+									int remaining = element.getBlockSize() - block.size();
+									block = primaryBucket.getLastBlock();
+
+									for (int i = 0; i < remaining; i++) {
+										sb.append(serializer.serialize(block.remove(i)));
+										sb.append('\n');
+									}
+								}
+							} else {
+								for (int i = 0; i < element.getBlockSize(); i++) {
+									sb.append(serializer.serialize(block.remove(i)));
+									sb.append('\n');
+								}
+							}
 						}
 
 						pw.print(sb.toString());

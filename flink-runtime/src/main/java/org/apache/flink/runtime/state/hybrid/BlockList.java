@@ -67,15 +67,15 @@ public class BlockList<T> {
 //		List<T> list = blockList.get(countBlocks++);
 //		return list;
 //	}
-//
-//	public synchronized List<T> getLastBlock() {
-//		int lastBlock = size / blockSize;
-//		if(size % blockSize == 0) {
-//			lastBlock--;
-//		}
-//		List<T> list = blockList.get(lastBlock);
-//		return list;
-//	}
+
+	public synchronized List<T> getLastBlock() {
+		int lastBlock = size / blockSize;
+		if(size % blockSize == 0) {
+			lastBlock--;
+		}
+		List<T> list = blockList.get(lastBlock);
+		return list;
+	}
 
 
 	public synchronized List<T> removeBlock(int minimumSize) {
@@ -93,7 +93,7 @@ public class BlockList<T> {
 				list = blockList.remove(--lastBlock);
 			}
 		}
-		size -= minimumSize;
+		size -= list.size();
 		return list;
 	}
 
