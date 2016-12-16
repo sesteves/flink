@@ -120,7 +120,7 @@ public class BlockList<T> {
 		return list;
 	}
 
-	public T removeLast() {
+	public  synchronized T removeLast() {
 		int lastBlock = size / blockSize;
 		if(size % blockSize == 0) {
 			lastBlock--;
