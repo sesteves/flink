@@ -116,7 +116,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			primaryBucketIndex = 0;
 			abortSpilling = false;
 			readRequested = false;
-			eof = false;
+			// TODO support multi triggering operation
+			// eof = false;
 
 			if (readingFromDisk) {
 				bucketListShared.setFinalProcessing(false);
