@@ -31,7 +31,6 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable<V> {
 
-	// TODO currently this value must be a multiple of number of tuples after flush
 	public static final int BLOCK_SIZE = 20000;
 
 	// private List<V> primaryBucket;
@@ -198,10 +197,11 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	public V next() {
 		V result = null;
 
-		if(line != null && !readRequested) {
-			readQueue.add(new QueueElement(secondaryBucketFName));
-			readRequested = true;
-		}
+		// request secondary bucket read
+//		if(line != null && !readRequested) {
+//			readQueue.add(new QueueElement(secondaryBucketFName));
+//			readRequested = true;
+//		}
 
 		if (primaryBucketIndex < primaryBucket.size()) {
 			if (!usePrimaryBucket) {
@@ -281,10 +281,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	public BlockList<V> getPrimaryBucket() {
 		return primaryBucket;
-	}
-
-	public Lock getPrimaryBucketLock() {
-		return primaryBucketLock;
 	}
 
 	public Queue<V> getWriteBuffer() {
