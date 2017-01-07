@@ -460,15 +460,17 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 			} else {
 				fire = false;
 
-				context.key = timer.key;
-				context.window = timer.window;
-				setKeyContext(timer.key);
+				if(timer != null) {
+					context.key = timer.key;
+					context.window = timer.window;
+					setKeyContext(timer.key);
 
-				AppendingState<IN, ACC> windowState =
-						getPartitionedState(context.window, windowSerializer, windowStateDescriptor);
+					AppendingState<IN, ACC> windowState =
+							getPartitionedState(context.window, windowSerializer, windowStateDescriptor);
 
-				if(windowState instanceof MemFsListState) {
-					((MemFsListState) windowState).prefetch();
+					if (windowState instanceof MemFsListState) {
+						((MemFsListState) windowState).prefetch();
+					}
 				}
 
 			}
