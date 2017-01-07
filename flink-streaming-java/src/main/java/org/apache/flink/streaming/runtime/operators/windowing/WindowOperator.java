@@ -409,6 +409,7 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 		boolean fire;
 		do {
 			Timer<K, W> timer = watermarkTimersQueue.peek();
+
 			if (timer != null && timer.timestamp <= mark.getTimestamp()) {
 				fire = true;
 
@@ -458,6 +459,18 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 
 			} else {
 				fire = false;
+
+				context.key = timer.key;
+				context.window = timer.window;
+				setKeyContext(timer.key);
+
+				AppendingState<IN, ACC> windowState =
+						getPartitionedState(context.window, windowSerializer, windowStateDescriptor);
+
+				if(windowState instanceof MemFsListState) {
+					((MemFsListState) windowState).prefetch();
+				}
+
 			}
 		} while (fire);
 
