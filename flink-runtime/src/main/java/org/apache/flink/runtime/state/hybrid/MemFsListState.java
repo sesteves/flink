@@ -120,10 +120,13 @@ public class MemFsListState<K, N, V>
 						PrintWriter pw = writeFiles.get(element.getFName());
 						if(pw != null) {
 							pw.flush();
+							System.out.println("Releasing read threads...");
 							semaphoreReadStart.release(spillThreads);
 							semaphoreReadEnd.acquire(spillThreads);
+							System.out.println("Done read threads...");
 						}
 						if(bucketListToRead != null) {
+							System.out.println("Mark EOF...");
 							bucketListToRead.markEOF();
 						}
 
