@@ -61,7 +61,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private BucketListShared bucketListShared;
 
-	private boolean readingFromDisk = false;
+//	private boolean readingFromDisk = false;
 
 	private Queue<QueueElement> readQueue, writeQueue, spillQueue;
 
@@ -117,10 +117,10 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			// TODO support multi triggering operation
 			// eof = false;
 
-			if (readingFromDisk) {
-				bucketListShared.setFinalProcessing(false);
-				readingFromDisk = false;
-			}
+//			if (readingFromDisk) {
+//				bucketListShared.setFinalProcessing(false);
+//				readingFromDisk = false;
+//			}
 
 			if (spill && !usePrimaryBucket) {
 
@@ -212,8 +212,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 //			primaryBucketLock.unlock();
 
 		} else if (line != null) {
-			readingFromDisk = true;
-			bucketListShared.setFinalProcessing(true);
+//			readingFromDisk = true;
+//			bucketListShared.setFinalProcessing(true);
 
 			result = line;
 
