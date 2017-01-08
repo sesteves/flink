@@ -139,15 +139,21 @@ public class MemFsListState<K, N, V>
 
 							if (!writeBuffer.isEmpty()) {
 
-								PrintWriter pw = writeFiles.get(element.getFName());
-								if (pw == null) {
-									System.out.println("creating file " + element.getFName());
-									pw = new PrintWriter(new FileWriter(element.getFName()));
-									writeFiles.put(element.getFName(), pw);
-								}
+								if (readFiles.get(element.getFName()) != null) {
+									// if we have started prefecthing, then write to result buffer directly
+									Queue<V> results = bucketList.getReadResultsBuffer();
+									results.add(writeBuffer.poll());
+								} else {
+									PrintWriter pw = writeFiles.get(element.getFName());
+									if (pw == null) {
+										System.out.println("creating file " + element.getFName());
+										pw = new PrintWriter(new FileWriter(element.getFName()));
+										writeFiles.put(element.getFName(), pw);
+									}
 
-								for(int i = 0; i < BucketList.BLOCK_SIZE && !writeBuffer.isEmpty(); i++) {
-									pw.println(serializer.serialize(writeBuffer.poll()));
+									for (int i = 0; i < BucketList.BLOCK_SIZE && !writeBuffer.isEmpty(); i++) {
+										pw.println(serializer.serialize(writeBuffer.poll()));
+									}
 								}
 							}
 						}
@@ -414,9 +420,13 @@ public class MemFsListState<K, N, V>
 						}
 					}
 
+					int count = 0;
 					String value;
 					while ((value = br.readLine()) != null) {
 						results.add((V) deserializer.deserialize(value));
+						if(count++ % 10000 == 0) {
+							System.out.println("Reading lines...");
+						}
 					}
 
 				} catch(InterruptedException e) {
@@ -426,6 +436,7 @@ public class MemFsListState<K, N, V>
 				} catch (IOException e) {
 					e.printStackTrace();
 				} finally {
+					System.out.println("semaphore released " + this);
 					semaphoreReadEnd.release();
 				}
 
