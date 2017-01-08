@@ -123,7 +123,9 @@ public class MemFsListState<K, N, V>
 							semaphoreReadStart.release(spillThreads);
 							semaphoreReadEnd.acquire(spillThreads);
 						}
-						bucketListToRead.markEOF();
+						if(bucketListToRead != null) {
+							bucketListToRead.markEOF();
+						}
 
 					} else if (!writeQueue.isEmpty()) {
 						element = writeQueue.poll();
