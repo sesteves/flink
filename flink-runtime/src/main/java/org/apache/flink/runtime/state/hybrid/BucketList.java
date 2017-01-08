@@ -218,16 +218,16 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			result = line;
 
 			// collect result
-            int count = 0;
+			int count = 0;
 			long startTick = System.currentTimeMillis();
-			while(readResults.isEmpty() && !eof) {
-				if(System.currentTimeMillis() - startTick > 1000) {
+			while (readResults.isEmpty() && !eof) {
+				if (System.currentTimeMillis() - startTick > 1000) {
 					System.out.println("taking to long to obtain results...");
 					startTick = System.currentTimeMillis();
 					count++;
-					if(count == 5) {
-					    System.exit(1);
-                    }
+					if (count == 5) {
+						System.exit(1);
+					}
 				}
 			}
 
