@@ -215,6 +215,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 //			readingFromDisk = true;
 //			bucketListShared.setFinalProcessing(true);
 
+
+			if (!readRequested) {
+				readQueue.add(new QueueElement(secondaryBucketFName));
+				readRequested = true;
+			}
+
+
 			result = line;
 
 			// collect result
@@ -222,7 +229,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			long startTick = System.currentTimeMillis();
 			while (readResults.isEmpty() && !eof) {
 				if (System.currentTimeMillis() - startTick > 1000) {
-					System.out.println("taking to long to obtain results...");
+					System.out.println("taking too long to obtain results...");
 					startTick = System.currentTimeMillis();
 					count++;
 					if (count == 5) {
@@ -253,6 +260,10 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			}
 		}
 		return true;
+	}
+
+	public void setReadRequested() {
+		readRequested = true;
 	}
 
 	public void purge() {

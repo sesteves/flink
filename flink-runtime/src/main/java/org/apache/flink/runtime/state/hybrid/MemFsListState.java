@@ -258,6 +258,7 @@ public class MemFsListState<K, N, V>
 	public void prefetch() {
 		BucketList<V> bucketList = (BucketList<V>) get();
 		readQueue.add(new QueueElement(bucketList.getSecondaryBucketFName()));
+		bucketList.setReadRequested();
 
 		System.out.println("Prefetching... " + bucketList.getSecondaryBucketFName());
 	}
