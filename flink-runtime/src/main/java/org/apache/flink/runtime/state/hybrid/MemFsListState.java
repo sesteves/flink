@@ -421,13 +421,9 @@ public class MemFsListState<K, N, V>
 						}
 					}
 
-					int count = 0;
 					String value;
 					while ((value = br.readLine()) != null) {
 						results.add((V) deserializer.deserialize(value));
-						if(count++ % 10000 == 0) {
-							System.out.println("Reading lines...");
-						}
 					}
 
 				} catch(InterruptedException e) {
