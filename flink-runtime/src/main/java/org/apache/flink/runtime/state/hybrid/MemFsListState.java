@@ -246,7 +246,7 @@ public class MemFsListState<K, N, V>
 
 		BucketList<V> bucketList = (BucketList<V>) currentNSState.get(currentKey);
 		if (bucketList == null) {
-			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, spillQueue, tuplesAfterSpillFactor, false);
+			bucketList = new BucketList<>(maxTuplesInMemory, bucketListShared, readQueue, writeQueue, spillQueue, tuplesAfterSpillFactor, true);
 			bucketLists.put(bucketList.getSecondaryBucketFName(), bucketList);
 			currentNSState.put(currentKey, bucketList);
 //			spill = !spill;
@@ -433,7 +433,6 @@ public class MemFsListState<K, N, V>
 				} catch (IOException e) {
 					e.printStackTrace();
 				} finally {
-					System.out.println("semaphore released " + this);
 					semaphoreReadEnd.release();
 				}
 
