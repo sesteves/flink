@@ -32,7 +32,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	public static final int BLOCK_SIZE = 20000;
 
-	// private List<V> primaryBucket;
 	private BlockList<V> primaryBucket;
 
 	private int primaryBucketSize;
@@ -40,8 +39,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	private int primaryBucketAfterFlushSize;
 
 	private int primaryBucketIndex = 0;
-
-//	private BufferedReader br;
 
 	private V line;
 
@@ -51,8 +48,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private String secondaryBucketFName = "state/state-" + UUID.randomUUID().toString();
 
-//	private PrintWriter secondaryBucket;
-
 	private boolean usePrimaryBucket = true;
 
 	private boolean abortSpilling = false;
@@ -60,8 +55,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	private ReentrantLock primaryBucketLock = new ReentrantLock();
 
 	private BucketListShared bucketListShared;
-
-//	private boolean readingFromDisk = false;
 
 	private Queue<QueueElement> readQueue, writeQueue, spillQueue;
 
@@ -74,6 +67,8 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	private boolean eof = false;
 
 	private boolean spill;
+
+	private int size = 0;
 
 	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue,
 		Queue<QueueElement> writeQueue, Queue<QueueElement> spillQueue, double tuplesAfterSpillFactor, boolean spill) {
@@ -153,15 +148,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 									break;
 								}
 
-
 								spillQueue.add(new QueueElement(secondaryBucketFName, BLOCK_SIZE));
-								//secondaryBucket.println(json);
-
-								// add(primaryBucket.remove(0));
-
-								// TODO make more efficient add
-								// String json = serializer.serialize(value);
-
 							}
 							if (!abortSpilling && remaining != 0) {
 								spillQueue.add(new QueueElement(secondaryBucketFName, remaining));
@@ -246,6 +233,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	@Override
 	public boolean add(V value) {
+		size++;
 		if ((usePrimaryBucket && primaryBucket.size() < primaryBucketSize) ||
 			(!usePrimaryBucket && primaryBucket.size() < primaryBucketAfterFlushSize)) {
 			primaryBucket.add(value);
@@ -288,6 +276,11 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	@Override
 	public Iterator iterator() {
 		return this;
+	}
+
+	@Override
+	public int size() {
+		return size;
 	}
 
 	public String getSecondaryBucketFName() {
