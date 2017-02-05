@@ -68,8 +68,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private boolean spill;
 
-	private int size = 0;
-
 	public BucketList(int primaryBucketSize, BucketListShared bucketListShared, Queue<QueueElement> readQueue,
 		Queue<QueueElement> writeQueue, Queue<QueueElement> spillQueue, double tuplesAfterSpillFactor, boolean spill) {
 
@@ -84,19 +82,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		this.writeQueue = writeQueue;
 		this.spillQueue = spillQueue;
 		this.spill = spill;
-
-//		buffer = new ArrayList<>(primaryBucketSize);
-
-//		try {
-			// create file
-//			secondaryBucket = new PrintWriter(new FileWriter(secondaryBucketFName));
-//			secondaryBucket.close();
-
-//			br = new BufferedReader(new FileReader(secondaryBucketFName));
-//			stats = new PrintWriter(new FileOutputStream(new File("stats.txt"), true));
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
 	}
 
 	@Override
@@ -233,7 +218,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	@Override
 	public boolean add(V value) {
-		size++;
 		if ((usePrimaryBucket && primaryBucket.size() < primaryBucketSize) ||
 			(!usePrimaryBucket && primaryBucket.size() < primaryBucketAfterFlushSize)) {
 			primaryBucket.add(value);
@@ -276,11 +260,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	@Override
 	public Iterator iterator() {
 		return this;
-	}
-
-	@Override
-	public int size() {
-		return size;
 	}
 
 	public String getSecondaryBucketFName() {
