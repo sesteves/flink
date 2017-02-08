@@ -250,6 +250,10 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		return true;
 	}
 
+	public boolean getReadRequested() {
+		return readRequested;
+	}
+
 	public void setReadRequested() {
 		readRequested = true;
 	}
@@ -276,6 +280,10 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 	@Override
 	public Iterator iterator() {
 		return this;
+	}
+
+	public boolean getUsePrimaryBucket() {
+		return usePrimaryBucket;
 	}
 
 	public String getSecondaryBucketFName() {
