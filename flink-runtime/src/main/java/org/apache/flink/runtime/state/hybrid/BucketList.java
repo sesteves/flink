@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -69,7 +69,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 	private boolean spill;
 
-	private Lock lockSpill = new ReentrantLock();
+	private Semaphore semaphoreSpill = new Semaphore(0);
 
 	private Thread spillThread = new Thread() {
 		@Override
@@ -77,43 +77,47 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 
 			while(true) {
 
-				lockSpill.lock();
+				try {
+					semaphoreSpill.acquire();
 
-				// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
-				// primaryBucketLock.lock();
+					// System.out.println("Before Primary Bucket Size: " + primaryBucket.size());
+					// primaryBucketLock.lock();
 
-				if (!abortSpilling && primaryBucket.size() > primaryBucketAfterFlushSize) {
+					if (!abortSpilling && primaryBucket.size() > primaryBucketAfterFlushSize) {
 
-					if (first) {
-						firstLine = primaryBucket.removeLast();
-						line = firstLine;
-						first = false;
-					}
-
-					int excess = primaryBucket.size() - primaryBucketAfterFlushSize;
-					int blocks = excess / BLOCK_SIZE;
-					int remaining = excess % BLOCK_SIZE;
-
-					System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + remaining);
-
-					for (int i = 0; i < blocks; i++) {
-						// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
-
-						if (abortSpilling) {
-							// TODO flush string builder
-							System.out.println("spilling aborted...");
-							break;
+						if (first) {
+							firstLine = primaryBucket.removeLast();
+							line = firstLine;
+							first = false;
 						}
 
-						spillQueue.add(new QueueElement(secondaryBucketFName, BLOCK_SIZE));
+						int excess = primaryBucket.size() - primaryBucketAfterFlushSize;
+						int blocks = excess / BLOCK_SIZE;
+						int remaining = excess % BLOCK_SIZE;
+
+						System.out.println("spilling... excess: " + excess + ", blocks: " + blocks + ", remaining: " + remaining);
+
+						for (int i = 0; i < blocks; i++) {
+							// while (primaryBucket.size() > primaryBucketAfterFlushSize) {
+
+							if (abortSpilling) {
+								// TODO flush string builder
+								System.out.println("spilling aborted...");
+								break;
+							}
+
+							spillQueue.add(new QueueElement(secondaryBucketFName, BLOCK_SIZE));
+						}
+						if (!abortSpilling && remaining != 0) {
+							spillQueue.add(new QueueElement(secondaryBucketFName, remaining));
+						}
+					} else {
+						System.out.println("No spill performed.");
 					}
-					if (!abortSpilling && remaining != 0) {
-						spillQueue.add(new QueueElement(secondaryBucketFName, remaining));
-					}
-				} else {
-					System.out.println("No spill performed.");
+					//primaryBucketLock.unlock();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
-				//primaryBucketLock.unlock();
 			}
 		}
 	};
@@ -134,7 +138,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		this.spillQueue = spillQueue;
 		this.spill = spill;
 
-		lockSpill.lock();
 		spillThread.start();
 	}
 
@@ -157,7 +160,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 //			}
 
 			if (spill && !usePrimaryBucket) {
-				lockSpill.unlock();
+				semaphoreSpill.release();
 
 				// spill is performed only a single time
 				spill = false;
