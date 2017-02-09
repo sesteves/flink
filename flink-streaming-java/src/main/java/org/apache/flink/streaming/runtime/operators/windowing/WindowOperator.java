@@ -565,6 +565,8 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 	private void fire(W window, ACC contents) throws Exception {
 		timestampedCollector.setAbsoluteTimestamp(window.maxTimestamp());
 		userFunction.apply(context.key, context.window, contents, timestampedCollector);
+
+		// TODO: perform spill here after the function is executed
 	}
 
 	/**
