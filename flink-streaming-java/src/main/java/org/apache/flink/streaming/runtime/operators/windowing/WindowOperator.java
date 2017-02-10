@@ -45,6 +45,7 @@ import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.runtime.state.AbstractStateBackend;
 import org.apache.flink.runtime.state.StateHandle;
+import org.apache.flink.runtime.state.hybrid.BucketList;
 import org.apache.flink.runtime.state.hybrid.MemFsListState;
 import org.apache.flink.streaming.api.operators.AbstractUdfStreamOperator;
 import org.apache.flink.streaming.api.operators.ChainingStrategy;
@@ -566,7 +567,9 @@ public class WindowOperator<K, IN, ACC, OUT, W extends Window>
 		timestampedCollector.setAbsoluteTimestamp(window.maxTimestamp());
 		userFunction.apply(context.key, context.window, contents, timestampedCollector);
 
-		// TODO: perform spill here after the function is executed
+		if(contents instanceof BucketList) {
+			((BucketList) contents).spill();
+		}
 	}
 
 	/**

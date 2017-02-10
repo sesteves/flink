@@ -159,13 +159,6 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 //				readingFromDisk = false;
 //			}
 
-			if (spill && !usePrimaryBucket) {
-				semaphoreSpill.release();
-
-				// spill is performed only a single time
-				spill = false;
-			}
-
 //			try {
 //				br.close();
 //				br = new BufferedReader(new FileReader(secondaryBucketFName));
@@ -248,6 +241,13 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 			}
 		}
 		return true;
+	}
+
+	public void spill() {
+		if (spill && !usePrimaryBucket) {
+			semaphoreSpill.release();
+			spill = false;
+		}
 	}
 
 	public boolean getReadRequested() {
