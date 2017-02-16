@@ -68,9 +68,12 @@ public class MemFsListState<K, N, V>
 
 	private int maxTuplesInMemory;
 
-	private JSONSerializer serializer = new JSONSerializer();
+	private JSONSerializer serializer = new JSONSerializer().transform(new TupleTransformer(), Tuple2.class)
+		.transform(new TupleTransformer(), Tuple3.class);
 
-	private JSONDeserializer<V> deserializer;
+	private JSONDeserializer<V> deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory())
+		.use(Tuple3.class, new TupleObjectFactory());
+
 
 	private BucketListShared bucketListShared = new BucketListShared();
 
@@ -184,14 +187,6 @@ public class MemFsListState<K, N, V>
 		this.maxTuplesInMemory = maxTuplesInMemory;
 		this.tuplesAfterSpillFactor = tuplesAfterSpillFactor;
 		this.spillThreads = spillThreads;
-
-		V instance = stateDesc.getSerializer().createInstance();
-		if (instance instanceof Tuple2 || instance instanceof Tuple3) {
-			serializer.transform(new TupleTransformer(), Tuple2.class).transform(new TupleTransformer(), Tuple3.class);
-			deserializer = new JSONDeserializer().use(instance.getClass(), new TupleObjectFactory());
-		} else {
-			deserializer = new JSONDeserializer<>();
-		}
 
 		semaphoreSpillStart = new Semaphore(spillThreads);
 		semaphoreSpillEnd = new Semaphore(spillThreads);
