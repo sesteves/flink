@@ -30,6 +30,7 @@ import org.apache.flink.runtime.state.memory.AbstractMemState;
 import org.apache.flink.runtime.state.memory.AbstractMemStateSnapshot;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
 import scala.Tuple2;
+import scala.Tuple3;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -68,7 +69,7 @@ public class MemFsListState<K, N, V>
 
 	private JSONSerializer serializer = new JSONSerializer();
 
-	private JSONDeserializer<V> deserializer = new JSONDeserializer<>();
+	private JSONDeserializer<V> deserializer;
 
 	private BucketListShared bucketListShared = new BucketListShared();
 
@@ -182,6 +183,14 @@ public class MemFsListState<K, N, V>
 		this.maxTuplesInMemory = maxTuplesInMemory;
 		this.tuplesAfterSpillFactor = tuplesAfterSpillFactor;
 		this.spillThreads = spillThreads;
+
+		V instance = stateDesc.getSerializer().createInstance();
+		if (instance instanceof Tuple2 || instance instanceof Tuple3) {
+			deserializer = new JSONDeserializer().use(instance.getClass(), new TupleObjectFactory());
+		} else {
+			deserializer = new JSONDeserializer<>();
+		}
+
 
 		semaphoreSpillStart = new Semaphore(spillThreads);
 		semaphoreSpillEnd = new Semaphore(spillThreads);
