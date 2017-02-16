@@ -20,6 +20,7 @@ package org.apache.flink.runtime.state.hybrid;
 
 import flexjson.JSONDeserializer;
 import flexjson.JSONSerializer;
+import flexjson.transformer.AbstractTransformer;
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
@@ -186,11 +187,11 @@ public class MemFsListState<K, N, V>
 
 		V instance = stateDesc.getSerializer().createInstance();
 		if (instance instanceof Tuple2 || instance instanceof Tuple3) {
+			serializer.transform(new TupleTransformer(), Tuple2.class).transform(new TupleTransformer(), Tuple3.class);
 			deserializer = new JSONDeserializer().use(instance.getClass(), new TupleObjectFactory());
 		} else {
 			deserializer = new JSONDeserializer<>();
 		}
-
 
 		semaphoreSpillStart = new Semaphore(spillThreads);
 		semaphoreSpillEnd = new Semaphore(spillThreads);
@@ -472,4 +473,35 @@ public class MemFsListState<K, N, V>
 			}
 		}
 	}
+
+	private class TupleTransformer extends AbstractTransformer {
+		@Override
+		public void transform(Object o) {
+			if (o instanceof Tuple2) {
+				getContext().writeOpenObject();
+				getContext().writeName("_1");
+				getContext().write(((Tuple2) o)._1().toString());
+				getContext().writeComma();
+				getContext().writeName("_2");
+				getContext().write(((Tuple2) o)._2().toString());
+				getContext().writeComma();
+				getContext().writeName("class");
+				getContext().writeQuoted("scala.Tuple2");
+				getContext().writeCloseObject();
+			} else if(o instanceof Tuple3) {
+				getContext().writeOpenObject();
+				getContext().writeName("_1");
+				getContext().write(((Tuple3) o)._1().toString());
+				getContext().writeComma();
+				getContext().writeName("_2");
+				getContext().write(((Tuple3) o)._2().toString());
+				getContext().writeComma();
+				getContext().writeName("_3");
+				getContext().write(((Tuple3) o)._3().toString());
+				getContext().writeName("class");
+				getContext().writeQuoted("scala.Tuple3");
+				getContext().writeCloseObject();
+			}
+		}}
+
 }
