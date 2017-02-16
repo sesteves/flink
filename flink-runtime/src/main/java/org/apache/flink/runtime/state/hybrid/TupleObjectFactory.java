@@ -21,14 +21,18 @@ package org.apache.flink.runtime.state.hybrid;
 import flexjson.JsonNumber;
 import flexjson.ObjectBinder;
 import flexjson.ObjectFactory;
+import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple23;
+import org.apache.flink.api.java.tuple.builder.Tuple5Builder;
 import scala.Tuple2;
+import scala.Tuple3;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
+ * TODO: Generalize this class to handle all kinds of tuples
  */
 public class TupleObjectFactory implements ObjectFactory {
 
@@ -36,7 +40,33 @@ public class TupleObjectFactory implements ObjectFactory {
 	public Object instantiate(ObjectBinder context, Object value, Type targetType, Class targetClass) {
 		if(value instanceof HashMap) {
 			Map bindings = (Map)value;
-			return new Tuple2(bindings.get("_1"), ((JsonNumber)bindings.get("_2")).toInteger());
+
+			if(bindings.size() == 3) {
+				Object o1 = bindings.get("_1");
+				Object o2 = bindings.get("_2");
+				if(o1 instanceof JsonNumber) {
+					o1 = ((JsonNumber) o1).toInteger();
+				}
+				if(o2 instanceof JsonNumber) {
+					o2 = ((JsonNumber) o2).toInteger();
+				}
+				return new Tuple2(o1, o2);
+			}
+			if(bindings.size() == 4) {
+				Object o1 = bindings.get("_1");
+				Object o2 = bindings.get("_2");
+				Object o3 = bindings.get("_3");
+				if(o1 instanceof JsonNumber) {
+					o1 = ((JsonNumber) o1).toInteger();
+				}
+				if(o2 instanceof JsonNumber) {
+					o2 = ((JsonNumber) o2).toInteger();
+				}
+				if(o3 instanceof JsonNumber) {
+					o3 = ((JsonNumber) o3).toInteger();
+				}
+				return new Tuple3(o1, o2, o3);
+			}
 		}
 		System.out.println("### RETURNING NULL");
 		return null;

@@ -68,7 +68,7 @@ public class MemFsListState<K, N, V>
 
 	private JSONSerializer serializer = new JSONSerializer();
 
-	private JSONDeserializer deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory());
+	private JSONDeserializer<V> deserializer = new JSONDeserializer<>();
 
 	private BucketListShared bucketListShared = new BucketListShared();
 
@@ -424,7 +424,12 @@ public class MemFsListState<K, N, V>
 
 					String value;
 					while ((value = br.readLine()) != null) {
-						results.add((V) deserializer.deserialize(value));
+						try {
+							results.add((V) deserializer.deserialize(value));
+						} catch(NullPointerException e) {
+							e.printStackTrace();
+							System.err.println("### value: " + value);
+						}
 					}
 
 				} catch(InterruptedException e) {
