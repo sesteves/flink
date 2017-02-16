@@ -21,9 +21,6 @@ package org.apache.flink.runtime.state.hybrid;
 import flexjson.JsonNumber;
 import flexjson.ObjectBinder;
 import flexjson.ObjectFactory;
-import org.apache.flink.api.java.tuple.Tuple;
-import org.apache.flink.api.java.tuple.Tuple23;
-import org.apache.flink.api.java.tuple.builder.Tuple5Builder;
 import scala.Tuple2;
 import scala.Tuple3;
 
