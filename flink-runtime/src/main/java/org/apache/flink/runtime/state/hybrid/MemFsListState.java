@@ -352,7 +352,11 @@ public class MemFsListState<K, N, V>
 						block = primaryBucket.removeBlock();
 
 						for (int i = 0; i < element.getBlockSize(); i++) {
-							sb.append(serializer.serialize(block.get(i)));
+							String s = serializer.serialize(block.get(i));
+							if(s.contains("null")) {
+								System.out.println(block.get(i));
+							}
+							sb.append(s);
 							sb.append('\n');
 						}
 					} else {
@@ -361,7 +365,11 @@ public class MemFsListState<K, N, V>
 							block = primaryBucket.removeLastBlock();
 
 							for (int i = 0; i < lastBlockSize; i++) {
-								sb.append(serializer.serialize(block.get(i)));
+								String s = serializer.serialize(block.get(i));
+								if(s.contains("null")) {
+									System.out.println(block.get(i));
+								}
+								sb.append(s);
 								sb.append('\n');
 							}
 
@@ -369,13 +377,23 @@ public class MemFsListState<K, N, V>
 								int remaining = element.getBlockSize() - lastBlockSize;
 
 								for (int i = 0; i < remaining; i++) {
-									sb.append(serializer.serialize(primaryBucket.removeLast()));
+									V v = primaryBucket.removeLast();
+									String s = serializer.serialize(v);
+									if(s.contains("null")) {
+										System.out.println(v);
+									}
+									sb.append(s);
 									sb.append('\n');
 								}
 							}
 						} else {
 							for (int i = 0; i < element.getBlockSize(); i++) {
-								sb.append(serializer.serialize(primaryBucket.removeLast()));
+								V v = primaryBucket.removeLast();
+								String s = serializer.serialize(v);
+								if(s.contains("null")) {
+									System.out.println(v);
+								}
+								sb.append(s);
 								sb.append('\n');
 							}
 						}
