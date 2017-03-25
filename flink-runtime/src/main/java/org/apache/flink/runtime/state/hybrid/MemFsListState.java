@@ -32,6 +32,7 @@ import org.apache.flink.runtime.state.memory.AbstractMemStateSnapshot;
 import org.apache.flink.runtime.state.memory.MemoryStateBackend;
 import scala.Tuple2;
 import scala.Tuple3;
+import scala.Tuple4;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -69,10 +70,10 @@ public class MemFsListState<K, N, V>
 	private int maxTuplesInMemory;
 
 	private JSONSerializer serializer = new JSONSerializer().transform(new TupleTransformer(), Tuple2.class)
-		.transform(new TupleTransformer(), Tuple3.class);
+		.transform(new TupleTransformer(), Tuple3.class).transform(new TupleTransformer(), Tuple4.class);
 
 	private JSONDeserializer<V> deserializer = new JSONDeserializer().use(Tuple2.class, new TupleObjectFactory())
-		.use(Tuple3.class, new TupleObjectFactory());
+		.use(Tuple3.class, new TupleObjectFactory()).use(Tuple4.class, new TupleObjectFactory());
 
 
 	private BucketListShared bucketListShared = new BucketListShared();
@@ -493,8 +494,26 @@ public class MemFsListState<K, N, V>
 				getContext().writeComma();
 				getContext().writeName("_3");
 				getContext().write(((Tuple3) o)._3().toString());
+				getContext().writeComma();
 				getContext().writeName("class");
 				getContext().writeQuoted("scala.Tuple3");
+				getContext().writeCloseObject();
+			} else if (o instanceof Tuple4) {
+				getContext().writeOpenObject();
+				getContext().writeName("_1");
+				getContext().write(((Tuple4) o)._1().toString());
+				getContext().writeComma();
+				getContext().writeName("_2");
+				getContext().write(((Tuple4) o)._2().toString());
+				getContext().writeComma();
+				getContext().writeName("_3");
+				getContext().write(((Tuple4) o)._3().toString());
+				getContext().writeComma();
+				getContext().writeName("_4");
+				getContext().write(((Tuple4) o)._4().toString());
+				getContext().writeComma();
+				getContext().writeName("class");
+				getContext().writeQuoted("scala.Tuple4");
 				getContext().writeCloseObject();
 			}
 		}}

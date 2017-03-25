@@ -23,6 +23,7 @@ import flexjson.ObjectBinder;
 import flexjson.ObjectFactory;
 import scala.Tuple2;
 import scala.Tuple3;
+import scala.Tuple4;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -63,6 +64,26 @@ public class TupleObjectFactory implements ObjectFactory {
 					o3 = ((JsonNumber) o3).toInteger();
 				}
 				return new Tuple3(o1, o2, o3);
+			}
+			if(bindings.size() == 5) {
+				Object o1 = bindings.get("_1");
+				Object o2 = bindings.get("_2");
+				Object o3 = bindings.get("_3");
+				Object o4 = bindings.get("_4");
+				if(o1 instanceof JsonNumber) {
+					o1 = ((JsonNumber) o1).toInteger();
+				}
+				if(o2 instanceof JsonNumber) {
+					o2 = ((JsonNumber) o2).toInteger();
+				}
+				if(o3 instanceof JsonNumber) {
+					o3 = ((JsonNumber) o3).toInteger();
+				}
+//				if(o4 instanceof JsonNumber) {
+//					o4 = ((JsonNumber) o4).toInteger();
+//				}
+
+				return new Tuple4(o1, o2, o3, o4);
 			}
 		}
 		System.out.println("### RETURNING NULL");
