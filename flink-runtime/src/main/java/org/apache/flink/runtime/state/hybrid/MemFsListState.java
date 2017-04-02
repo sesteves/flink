@@ -102,6 +102,8 @@ public class MemFsListState<K, N, V>
 
 	private int numberOfPastWindows;
 
+	private String firstId;
+
 	private Thread ioThread = new Thread() {
 		@Override
 		public void run() {
@@ -277,8 +279,14 @@ public class MemFsListState<K, N, V>
 	public void purge() {
 		BucketList<V> bucketList = (BucketList<V>) get();
 		bucketList.purge();
+		String id = bucketList.getSecondaryBucketFName();
+		if(firstId == null) {
+			firstId = id;
+		}
+		if(firstId.equals(id)) {
+			numberOfPastWindows--;
+		}
 		System.out.println("purge: " + bucketList.getSecondaryBucketFName());
-		numberOfPastWindows--;
 	}
 
 	public void clean() {
