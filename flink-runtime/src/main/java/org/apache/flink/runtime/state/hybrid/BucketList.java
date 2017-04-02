@@ -129,8 +129,7 @@ public class BucketList<V> extends ArrayList<V> implements Iterator<V>, Iterable
 		this.primaryBucketSize = primaryBucketSize;
 		primaryBucketAfterFlushSize = (int) Math.round(tuplesAfterSpillFactor * primaryBucketSize);
 
-		// primaryBucket = new BlockList<>(primaryBucketSize, BLOCK_SIZE);
-		primaryBucket = new BlockList<>(BLOCK_SIZE);
+		primaryBucket = new BlockList<>(primaryBucketSize, BLOCK_SIZE);
 
 		this.bucketListShared = bucketListShared;
 

@@ -119,6 +119,9 @@ public class MemFsListState<K, N, V>
 						if(pw != null) {
 							pw.flush();
 						}
+						System.out.println("writeQueue: " + writeQueue.size() + ", readQueue: " + readQueue.size() +
+								", spillQueue: " + spillQueue.size() + ", writeFilesMap: " + writeFiles.size() +
+								", readFilesMap: " + readFiles.size() + ", bucketLists: " + bucketLists.size());
 
 					} else if (!readQueue.isEmpty()) {
 						element = readQueue.poll();
