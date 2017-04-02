@@ -60,6 +60,9 @@ public class MemoryFsStateBackend extends AbstractStateBackend {
 	private final int maxTuplesInMemory;
 
 	/** */
+	private final int numberOfPastWindows;
+
+	/** */
 	private final double tuplesAfterSpillFactor;
 
 	/** */
@@ -72,6 +75,7 @@ public class MemoryFsStateBackend extends AbstractStateBackend {
 	public MemoryFsStateBackend() {
 		// this(DEFAULT_MAX_STATE_SIZE);
 		this.maxTuplesInMemory = 100000;
+		this.numberOfPastWindows = 0;
 		this.tuplesAfterSpillFactor = 0.1;
 		this.spillThreads = 4;
 		this.maxStateSize = DEFAULT_MAX_STATE_SIZE;
@@ -80,8 +84,10 @@ public class MemoryFsStateBackend extends AbstractStateBackend {
 	/**
 	 *
 	 */
-	public MemoryFsStateBackend(int maxTuplesInMemory, double tuplesAfterSpillFactor, int spillThreads) {
+	public MemoryFsStateBackend(int maxTuplesInMemory, int numberOfPastWindows, double tuplesAfterSpillFactor,
+			int spillThreads) {
 		this.maxTuplesInMemory = maxTuplesInMemory;
+		this.numberOfPastWindows = numberOfPastWindows;
 		this.tuplesAfterSpillFactor = tuplesAfterSpillFactor;
 		this.maxStateSize = DEFAULT_MAX_STATE_SIZE;
 		this.spillThreads = spillThreads;
@@ -120,7 +126,7 @@ public class MemoryFsStateBackend extends AbstractStateBackend {
 
 	@Override
 	public <N, T> ListState<T> createListState(TypeSerializer<N> namespaceSerializer, ListStateDescriptor<T> stateDesc) throws Exception {
-		return new MemFsListState<>(keySerializer, namespaceSerializer, stateDesc, maxTuplesInMemory, tuplesAfterSpillFactor, spillThreads);
+		return new MemFsListState<>(keySerializer, namespaceSerializer, stateDesc, maxTuplesInMemory, numberOfPastWindows, tuplesAfterSpillFactor, spillThreads);
 	}
 
 	@Override

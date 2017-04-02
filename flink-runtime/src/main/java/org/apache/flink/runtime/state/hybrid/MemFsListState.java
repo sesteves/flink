@@ -100,6 +100,8 @@ public class MemFsListState<K, N, V>
 
 	private BucketList<V> bucketListToRead;
 
+	private int numberOfPastWindows;
+
 	private Thread ioThread = new Thread() {
 		@Override
 		public void run() {
@@ -183,9 +185,11 @@ public class MemFsListState<K, N, V>
 
 
 	public MemFsListState(TypeSerializer<K> keySerializer, TypeSerializer<N> namespaceSerializer,
-		ListStateDescriptor<V> stateDesc, int maxTuplesInMemory, double tuplesAfterSpillFactor, int spillThreads) {
+			ListStateDescriptor<V> stateDesc, int maxTuplesInMemory, int numberOfPastWindows, double tuplesAfterSpillFactor,
+			int spillThreads) {
 		super(keySerializer, namespaceSerializer, new ArrayListSerializer<>(stateDesc.getSerializer()), stateDesc);
 		this.maxTuplesInMemory = maxTuplesInMemory;
+		this.numberOfPastWindows = numberOfPastWindows;
 		this.tuplesAfterSpillFactor = tuplesAfterSpillFactor;
 		this.spillThreads = spillThreads;
 
@@ -230,7 +234,7 @@ public class MemFsListState<K, N, V>
 
 		if(currentNSState != null) {
 			BucketList<V> result = (BucketList<V>) currentNSState.get(currentKey);
-			System.out.println("get called... Flushing file: " + result.getSecondaryBucketFName());
+			// System.out.println("get called... Flushing file: " + result.getSecondaryBucketFName());
 			// flush
 			flushes.add(result.getSecondaryBucketFName());
 			return result;
@@ -263,26 +267,28 @@ public class MemFsListState<K, N, V>
 
 	public void prefetch() {
 		BucketList<V> bucketList = (BucketList<V>) get();
-		if (!bucketList.getUsePrimaryBucket() && !bucketList.getReadRequested()) {
+		if (!bucketList.getUsePrimaryBucket() && !bucketList.getReadRequested() && numberOfPastWindows < 0) {
 			readQueue.add(new QueueElement(bucketList.getSecondaryBucketFName()));
 			bucketList.setReadRequested();
-			System.out.println("Prefetching... " + bucketList.getSecondaryBucketFName());
+			System.out.println("prefetching: " + bucketList.getSecondaryBucketFName());
 		}
 	}
 
 	public void purge() {
 		BucketList<V> bucketList = (BucketList<V>) get();
 		bucketList.purge();
+		System.out.println("purge: " + bucketList.getSecondaryBucketFName());
+		numberOfPastWindows--;
 	}
 
 	public void clean() {
-		System.out.println("clean called...");
 		BucketList<V> bucketList = (BucketList<V>) get();
 		String id = bucketList.getSecondaryBucketFName();
 		bucketLists.remove(id);
 		bucketList.clear();
 		readFiles.remove(id);
 		writeFiles.remove(id);
+		System.out.println("clean: " + id);
 	}
 
 	@Override
