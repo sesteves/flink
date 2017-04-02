@@ -269,7 +269,7 @@ public class MemFsListState<K, N, V>
 
 	public void prefetch() {
 		BucketList<V> bucketList = (BucketList<V>) get();
-		if (!bucketList.getUsePrimaryBucket() && !bucketList.getReadRequested() && numberOfPastWindows < 0) {
+		if (!bucketList.getUsePrimaryBucket() && !bucketList.getReadRequested() && numberOfPastWindows <= 0) {
 			readQueue.add(new QueueElement(bucketList.getSecondaryBucketFName()));
 			bucketList.setReadRequested();
 			System.out.println("prefetching: " + bucketList.getSecondaryBucketFName());
@@ -286,7 +286,6 @@ public class MemFsListState<K, N, V>
 		if(firstId.equals(id)) {
 			numberOfPastWindows--;
 		}
-		System.out.println("purge: " + bucketList.getSecondaryBucketFName());
 	}
 
 	public void clean() {
@@ -364,9 +363,6 @@ public class MemFsListState<K, N, V>
 
 						for (int i = 0; i < element.getBlockSize(); i++) {
 							String s = serializer.serialize(block.get(i));
-							if(s.contains("null")) {
-								System.out.println(block.get(i));
-							}
 							sb.append(s);
 							sb.append('\n');
 						}
@@ -377,9 +373,6 @@ public class MemFsListState<K, N, V>
 
 							for (int i = 0; i < lastBlockSize; i++) {
 								String s = serializer.serialize(block.get(i));
-								if(s.contains("null")) {
-									System.out.println(block.get(i));
-								}
 								sb.append(s);
 								sb.append('\n');
 							}
@@ -390,9 +383,6 @@ public class MemFsListState<K, N, V>
 								for (int i = 0; i < remaining; i++) {
 									V v = primaryBucket.removeLast();
 									String s = serializer.serialize(v);
-									if(s.contains("null")) {
-										System.out.println(v);
-									}
 									sb.append(s);
 									sb.append('\n');
 								}
@@ -401,9 +391,6 @@ public class MemFsListState<K, N, V>
 							for (int i = 0; i < element.getBlockSize(); i++) {
 								V v = primaryBucket.removeLast();
 								String s = serializer.serialize(v);
-								if(s.contains("null")) {
-									System.out.println(v);
-								}
 								sb.append(s);
 								sb.append('\n');
 							}

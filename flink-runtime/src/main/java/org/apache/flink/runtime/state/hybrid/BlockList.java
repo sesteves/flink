@@ -35,27 +35,42 @@ public class BlockList<T> {
 
 //	private int countBlocks = 0;
 
-	public BlockList(int capacity, int blockSize) {
+//	public BlockList(int capacity, int blockSize) {
+//		this.blockSize = blockSize;
+//
+//		int blocks = capacity / blockSize;
+//		int remaining = capacity % blockSize;
+//
+//		blockList = Collections.synchronizedList(new ArrayList<List<T>>(blocks + (remaining == 0? 0 : 1)));
+//
+//		for(int i = 0; i < blocks; i++) {
+//			blockList.add(Collections.synchronizedList(new ArrayList<T>(blockSize)));
+//		}
+//		if(remaining != 0) {
+//			blockList.add(Collections.synchronizedList(new ArrayList<T>(remaining)));
+//		}
+//	}
+
+	public BlockList(int blockSize) {
 		this.blockSize = blockSize;
-
-		int blocks = capacity / blockSize;
-		int remaining = capacity % blockSize;
-
-		blockList = Collections.synchronizedList(new ArrayList<List<T>>(blocks + (remaining == 0? 0 : 1)));
-
-		for(int i = 0; i < blocks; i++) {
-			blockList.add(Collections.synchronizedList(new ArrayList<T>(blockSize)));
-		}
-		if(remaining != 0) {
-			blockList.add(Collections.synchronizedList(new ArrayList<T>(remaining)));
-		}
+		blockList = Collections.synchronizedList(new ArrayList<List<T>>());
 	}
 
 	public void add(T object) {
+		int remaining = size % blockSize;
+		if (remaining == 0 || size == 0) {
+			blockList.add(Collections.synchronizedList(new ArrayList<T>()));
+		}
 		int lastBlock = size / blockSize;
 		blockList.get(lastBlock).add(object);
 		size++;
 	}
+
+//	public void add(T object) {
+//		int lastBlock = size / blockSize;
+//		blockList.get(lastBlock).add(object);
+//		size++;
+//	}
 
 	public T get(int index) {
 		int block = index / blockSize;
